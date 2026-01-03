@@ -24,8 +24,7 @@ const config: DocsThemeConfig = {
     link: 'https://github.com/shuding/nextra-docs-template',
   },
   sidebar: {
-    defaultMenuCollapseLevel: 1,
-    toggleButton: true,
+    defaultMenuCollapseLevel: 1
   },
   chat: {
     link: 'https://discord.com',
@@ -43,9 +42,6 @@ const config: DocsThemeConfig = {
   nextThemes: {
     defaultTheme: 'dark',
     forcedTheme: 'dark',
-  },
-  themeSwitch: {
-    component: null,
   },
   useNextSeoProps() {
     return {

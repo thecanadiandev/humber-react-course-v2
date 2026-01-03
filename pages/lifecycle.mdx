@@ -1,0 +1,60 @@
+---
+toc: false
+---
+
+# Component Lifecycle
+
+- Component lifecycle methods are special methods that get called at different stages of a component's existence (mounting, updating, unmounting).
+- In functional components, we use the `useEffect` hook to handle side effects and lifecycle events.
+- Side effects include data fetching, subscriptions, or manually changing the DOM.
+
+- Common lifecycle events include:
+  - Mounting: When the component is first added to the DOM.
+  - Updating: When the component's props or state change.
+  - Unmounting: When the component is removed from the DOM.
+
+## Component Lifecycle Phases explained
+
+A React component's lifecycle begins with the **mount phase**, which occurs when the component is first created and inserted into the DOM. During mounting, React calls your component function, executes any code inside it, runs useState to initialize state, and renders the JSX to the screen. After the initial render completes, React triggers any useEffect hooks with empty dependency arrays—this is where you typically fetch initial data, set up subscriptions, or perform one-time setup tasks.
+
+Once mounted, the component enters the **update phase** whenever its state or props change. Each state update triggers a re-render where React calls your component function again with the new state values, compares the new output with the previous Virtual DOM, and updates only the changed parts of the actual DOM. During updates, useEffect hooks with dependencies run if their specified values have changed—React compares the previous and current dependency values, and if they differ, it first runs any cleanup function from the previous effect, then executes the effect again with the new values.
+
+Finally, when the component is removed from the UI, it enters the **unmount phase**. React removes the component from the DOM and runs all cleanup functions returned from useEffect hooks—this is your last chance to clean up event listeners, cancel pending requests, clear timers, or close subscriptions to prevent memory leaks. After unmount completes, the component is gone, and if it appears again later, it goes through the entire mount phase from scratch as a brand new instance.
+
+
+## Understanding useEffect Hook
+
+useEffect is React's way of handling side effects in functional components. Side effects are operations that interact with things outside your component—like fetching data from APIs, updating the document title, setting up subscriptions, or manipulating the DOM directly. 
+
+### The Three Syntax Patterns
+
+**Pattern 1: Run Once on Mount (Empty Dependency Array)**
+
+When you pass an empty array as the second argument, useEffect runs only once after the component first renders. This is perfect for initial data fetching, setting up subscriptions, or any one-time setup logic. Think of it as the component's initialization phase—it happens once and never repeats unless the component unmounts and mounts again.
+
+**Pattern 2: Run When Dependencies Change (Dependency Array with Values)**
+
+When you pass an array containing specific state or prop values, useEffect runs whenever any of those values change. React compares the previous values with the current ones, and if anything is different, it triggers the effect. This is ideal for responding to specific changes—like refetching data when a user ID changes, updating the page title when a counter changes, or recalculating something when related values update.
+
+**Pattern 3: Run on Every Render (No Dependency Array)**
+
+When you omit the dependency array entirely, useEffect runs after every single render—both the initial mount and every subsequent update. This pattern is rarely used because it can cause performance issues, but it's useful when you need to perform an action after absolutely any change in your component.
+
+### How Cleanup Works
+
+The cleanup function is what you return from useEffect. React calls this function before running the effect again (if dependencies changed) or when the component unmounts completely. It's your opportunity to clean up anything you set up in the effect—remove event listeners, cancel network requests, clear timers, or close subscriptions.
+
+For effects that run once on mount, the cleanup runs once on unmount. For effects with dependencies, the cleanup runs before the effect executes again with new values—this prevents memory leaks and stale references. If your effect doesn't create anything that needs cleanup (like a simple console.log), you don't need to return anything. The cleanup function ensures your component doesn't leave behind subscriptions, listeners, or timers that would continue running even after the component is gone, which would cause memory leaks and unexpected behavior.
+
+Add a demo life cycle component, a counter and 2 buttons to increase and decrease the count. Use useEffect to log messages to console for each of the 3 patterns discussed above.
+
+[Find the working solution in this commit](https://github.com/thecanadiandev/react-core-fundamentals/commit/7ef441030a0b46c9b4525449ad34c763d47eb540)
+
+And to practice the useEffects, lets add a small functionality to store the cart items in local storage so that they persist across page reloads.
+
+- On component mount, read cart items from local storage and initialize state.
+- Whenever cart items state changes, update local storage with the new state.
+- Ensure to handle JSON parsing/stringifying when reading/writing to local storage.
+- Test by adding/removing items and refreshing the page to see if cart state persists.
+
+[Find the working solution in this commit](https://github.com/thecanadiandev/react-core-fundamentals/commit/ae83a5f77ce90bf740eff7c6aa064d672d86c216) 

@@ -1,5 +1,9 @@
 {
   "index": "Welcome react",
+  "core-fundamentals": "Core Fundamentals",
+  "controlled": "Controlled components",
+  "lifecycle": "Component lifecycle",
+  "uncontrolled": "Uncontrolled components",
   "about": {
     "title": "About",
     "type": "page"
