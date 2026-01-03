@@ -1,0 +1,198 @@
+:root {
+  --react-blue: #61dafb;
+  --dark-bg: #20232a;
+  --darker-bg: #282c34;
+  --light-text: #ffffff;
+  --gray-text: #d1d5db;
+}
+
+/* Dark theme styling to match React docs */
+body {
+  background-color: var(--dark-bg) !important;
+  color: var(--gray-text) !important;
+}
+
+/* Main content area */
+.nextra-content {
+  background-color: var(--dark-bg) !important;
+}
+
+/* Headers */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--light-text) !important;
+  font-weight: 600 !important;
+}
+
+h1 {
+  font-size: 3rem !important;
+  font-weight: 700 !important;
+  margin-bottom: 1rem !important;
+}
+
+/* Links */
+a {
+  color: var(--react-blue) !important;
+  text-decoration: none !important;
+  transition: opacity 0.2s ease !important;
+}
+
+a:hover {
+  opacity: 0.8 !important;
+}
+
+/* Sidebar */
+aside.nextra-sidebar-container {
+  background-color: var(--darker-bg) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+  min-height: 100vh !important;
+  height: 100% !important;
+}
+
+.nextra-sidebar {
+  background-color: var(--darker-bg) !important;
+  padding: 1rem !important;
+}
+
+.nextra-sidebar li {
+  margin: 0.25rem 0 !important;
+}
+
+.nextra-sidebar li a {
+  color: var(--gray-text) !important;
+  padding: 0.5rem 0.75rem !important;
+  border-radius: 6px !important;
+  display: block !important;
+  transition: all 0.2s ease !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+}
+
+.nextra-sidebar li a:hover,
+.nextra-sidebar li.active > a {
+  color: var(--react-blue) !important;
+  background-color: rgba(97, 218, 251, 0.1) !important;
+}
+
+/* Sidebar menu items */
+.nextra-sidebar ul {
+  padding-left: 0 !important;
+}
+
+.nextra-sidebar ul ul {
+  padding-left: 1rem !important;
+}
+
+/* Navigation bar */
+nav.nextra-nav-container {
+  background-color: var(--darker-bg) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.nextra-nav-container-blur {
+  background-color: var(--darker-bg) !important;
+}
+
+/* Search */
+.nextra-search input {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: var(--light-text) !important;
+}
+
+.nextra-search input::placeholder {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Code blocks */
+pre {
+  background-color: var(--darker-bg) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+code {
+  color: var(--react-blue) !important;
+}
+
+/* Inline code */
+:not(pre) > code {
+  background-color: rgba(97, 218, 251, 0.1) !important;
+  color: var(--react-blue) !important;
+  padding: 0.2em 0.4em !important;
+  border-radius: 3px !important;
+  font-size: 0.9em !important;
+}
+
+/* Buttons */
+button {
+  background-color: var(--react-blue) !important;
+  color: var(--dark-bg) !important;
+  border: none !important;
+  padding: 0.5rem 1.5rem !important;
+  border-radius: 6px !important;
+  font-weight: 600 !important;
+  transition: opacity 0.2s ease !important;
+  cursor: pointer !important;
+}
+
+button:hover {
+  opacity: 0.9 !important;
+}
+
+/* Cards and containers */
+.nextra-card {
+  background-color: var(--darker-bg) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: var(--gray-text) !important;
+}
+
+/* Table of contents */
+.nextra-toc {
+  color: var(--gray-text) !important;
+}
+
+.nextra-toc li a {
+  color: var(--gray-text) !important;
+}
+
+.nextra-toc li.active > a {
+  color: var(--react-blue) !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--dark-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Footer */
+footer {
+  background-color: var(--darker-bg) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: var(--gray-text) !important;
+}
+
+/* Blockquotes */
+blockquote {
+  border-left: 4px solid var(--react-blue) !important;
+  background-color: rgba(97, 218, 251, 0.05) !important;
+  color: var(--gray-text) !important;
+}
+
+/* Selection */
+::selection {
+  background-color: rgba(97, 218, 251, 0.3) !important;
+  color: var(--light-text) !important;
+}

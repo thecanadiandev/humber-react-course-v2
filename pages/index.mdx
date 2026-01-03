@@ -1,0 +1,60 @@
+---
+toc: false
+---
+
+# React fundamentals
+
+- Front end JS library to build UIs
+- Created by Facebook in 2011, open sourced in 2013
+- Component-based architecture
+- At its core, React allows developers to build encapsulated components that manage their own state, and then compose them to create complex UIs.
+- Essentially a library that provides the tools to build user interfaces, but it doesn’t dictate how you structure your application.
+- Unlike frameworks like Angular or Vue, React focuses only on the UI, and you can choose additional tools for things like routing (React Router) and state management (Zustand, Redux, or Context API).
+- Next.js is a framework built on React that provides additional features like server-side rendering, file-based routing, and API handling.
+
+## Why use React
+
+ Here are the compelling reasons to consider react over plain JavaScript for building web applications:
+
+**1. Create Dynamic, Engaging Interfaces**
+
+Modern web users expect interactive experiences—not static pages with text and images. They want responsive forms, clickable elements, and real-time updates. React simplifies building these experiences through built-in features like state management and hooks. While vanilla JavaScript works fine for fundamentals and smaller projects, complex applications quickly become unwieldy without a framework like React.
+
+**2. Modular Component Structure**
+
+React's component-based approach lets you build reusable UI pieces—buttons, forms, navigation menus—instead of writing monolithic code. Need to update a button's styling? Change it once, and it updates everywhere. This modularity keeps your codebase organized, maintainable, and scalable as your application grows.
+
+**3. Intuitive and Readable Code**
+
+React's declarative syntax means you describe your desired UI outcome, and React handles the implementation details. This approach is cleaner and more debuggable than manually manipulating the DOM with vanilla JavaScript.
+
+**4. Thriving Ecosystem**
+
+React's widespread adoption means access to extensive community support, countless third-party libraries, and abundant learning resources. Need routing? State management? UI components? There's likely a battle-tested React solution available.
+
+**5. Industry Standard**
+
+For aspiring web developers, React offers the strongest job prospects—it's the dominant frontend technology in professional development.
+
+**6. Versatile Skill Application**
+
+React knowledge transfers across platforms and meta-frameworks, enabling you to build diverse application types with a single learned skill set.
+
+## Understanding React Rendering Strategies
+
+### **Single Page Application (SPA)**
+
+SPAs load one HTML page initially, then use JavaScript to dynamically update content without full page reloads. React handles all rendering in the browser—when you navigate, it manipulates the DOM rather than fetching new pages from the server. This creates smooth, app-like experiences with fast navigation after the initial load. However, SPAs suffer from slower first loads (JavaScript must download first), poor SEO, and blank screens until React executes. They're ideal for dashboards, admin panels, and internal tools where SEO isn't a priority.
+
+### **Server-Side Rendering (SSR)**
+
+SSR generates complete HTML on the server for each request before sending it to the browser. When users request a page, the server runs React, creates the HTML, and delivers a fully-rendered page that's immediately visible. Once the page loads, React "hydrates" it to add interactivity. This approach offers excellent SEO since search engines receive complete HTML, and users see content faster. The tradeoff is increased server load and complexity. SSR works best for e-commerce sites, content platforms, and any application requiring strong SEO with dynamic content.
+
+### **Static Site Generation (SSG)**
+
+SSG pre-builds all pages as static HTML files during deployment rather than at request time. React generates the complete HTML for every page during the build process, and these files are served instantly from a CDN. This delivers the fastest possible load times, perfect SEO, and minimal server costs. However, any content change requires rebuilding and redeploying the entire site, making it unsuitable for frequently updated or personalized content. SSG excels for blogs, documentation, portfolios, and marketing sites with relatively static content.
+
+### **Other options** 
+
+- **React Native** for building mobile applications using React principles.
+- **Electron** for creating cross-platform desktop applications with web technologies.
