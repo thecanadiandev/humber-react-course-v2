@@ -13,6 +13,34 @@ In React, uncontrolled components are those where form data is handled by the DO
 - **Avoiding state for non-UI data**: Refs are useful for storing data that doesn't need to trigger a UI update, such as form input values, timers, or external library instances.
 - It returns a mutable ref object whose `.current` property is initialized to the passed argument (initialValue). The returned object will persist for the full lifetime of the component.
 
+```jsx
+import { useRef } from 'react';
+
+function MyComponent() {
+  const inputRef = useRef(null);
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    console.log('Input Value:', inputRef.current.value);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input type="text" ref={inputRef} />
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+```
+
+**Use case:**
+
+Take an example of a login form. There is a username or email and password field. Instead of controlling the values using state, we can use refs to access the values when the user submits the form. If all that matters is the value at the time of submission and you don't need to validate or manipulate the input values as the user types, uncontrolled components can be a simpler choice.
+
+Another use case is holding timerIds or intervalIds that don't need to trigger re-renders. You can store these IDs in refs to manage timers without affecting the component's state.
+
+### App refactor 
+
 Since the app is growing, lets create a more structured folder structure so that it becomes easy to find respective compoennts rather than having everything in a single folder.
 
 ```
@@ -23,7 +51,7 @@ src
     |-- login
     |-- ui
 
-App.jsx 
+|-- App.jsx 
 ```
 Also, lets create a Login component that is an uncontrolled component with useRef.
 

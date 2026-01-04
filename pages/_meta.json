@@ -4,6 +4,7 @@
   "controlled": "Controlled components",
   "lifecycle": "Component lifecycle",
   "uncontrolled": "Uncontrolled components",
+  "apis": "Dealing with APIs",
   "about": {
     "title": "About",
     "type": "page"
