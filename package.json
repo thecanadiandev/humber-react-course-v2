@@ -9,6 +9,7 @@
   },
   "author": "Shu Ding <g@shud.in>",
   "license": "MIT",
+  "packageManager": "pnpm@10.30.0",
   "dependencies": {
     "next": "^13.0.6",
     "nextra": "2.0.1",
