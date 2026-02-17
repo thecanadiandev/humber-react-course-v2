@@ -1,0 +1,216 @@
+---
+toc: false
+---
+
+# Class Components (legacy)
+
+Class components were the primary way to create stateful components and manage lifecycle methods in React before the introduction of hooks. They are ES6 classes that extend from `React.Component` and must include a `render()` method that returns JSX.
+
+**Basic Syntax:**
+
+```jsx
+import React, { Component } from "react";
+
+class Greeting extends Component {
+  render() {
+    return <h1>Hello, {this.props.name}!</h1>;
+  }
+}
+
+class Counter extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { count: props.initialCount || 0 };
+  }
+
+  increment = () => {
+    this.setState({ count: this.state.count + 1 });
+  };
+
+  render() {
+    return (
+      <div>
+        <Greeting name={this.props.userName} />
+        <p>Count: {this.state.count}</p>
+        <button onClick={this.increment}>Increment</button>
+      </div>
+    );
+  }
+}
+
+// Usage
+<Counter userName="Alice" initialCount={5} />;
+```
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-zmy3zkn6?file=src%2FApp.jsx)
+
+**Key Differences from Functional Components:**
+
+- Must extend `Component` or `PureComponent`
+- State is an object in `this.state`
+- Use `this.setState()` to update
+- Access props via `this.props`
+- Methods need binding or arrow functions
+
+## Lifecycle Methods:
+
+**Mounting (component created):**
+
+```jsx
+constructor(props); // Initialize state
+componentDidMount(); // After first render - fetch data, subscriptions
+```
+
+**Updating (props/state change):**
+
+```jsx
+shouldComponentUpdate(nextProps, nextState); // Optimize re-renders (return true/false)
+componentDidUpdate(prevProps, prevState); // After re-render - side effects based on changes
+```
+
+**Unmounting (component removed):**
+
+```jsx
+componentWillUnmount(); // Cleanup - clear timers, cancel subscriptions
+```
+
+**Error Handling:**
+
+```jsx
+componentDidCatch(error, info); // Catch errors in child components
+```
+
+**Functional Equivalent:**
+
+```jsx
+// Class lifecycle → Hooks
+componentDidMount → useEffect(() => {}, [])
+componentDidUpdate → useEffect(() => {})
+componentWillUnmount → useEffect(() => { return () => {} }, [])
+```
+
+**Why Classes Are Legacy:**
+
+- More boilerplate
+- `this` binding confusion
+- Harder to reuse logic (HOCs, render props vs custom hooks)
+- Hooks provide cleaner, more composable patterns
+
+Still found in older codebases and some libraries.
+
+## Error Boundaries
+
+**Purpose:** Catch JavaScript errors in child components, log them, and display fallback UI instead of crashing the entire app.
+
+**Note: It Must Be Class Components:**
+
+Error boundaries require `componentDidCatch` and `getDerivedStateFromError`—no hook equivalents exist yet.
+
+**Implementation:**
+
+```jsx
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    // Update state to show fallback UI
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    // Log error to service
+    console.error("Error caught:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <h1>Something went wrong.</h1>;
+    }
+
+    return this.props.children;
+  }
+}
+```
+
+**Usage:**
+
+```jsx
+<ErrorBoundary>
+  <MyComponent />
+</ErrorBoundary>
+```
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-plcvcsab?file=src%2FApp.jsx)
+
+**What Error Boundaries Catch:**
+
+- Errors in render methods
+- Errors in lifecycle methods
+- Errors in constructors of child components
+
+```jsx
+// Caught - error in render
+function BrokenComponent() {
+  const data = null;
+  return <div>{data.name}</div>; // Error! Can't read 'name' of null
+}
+
+// Caught - error in lifecycle
+componentDidMount() {
+  throw new Error('Something broke');
+}
+
+// Caught - error in child constructor
+constructor(props) {
+  super(props);
+  throw new Error('Init failed');
+}
+```
+
+**What They Don't Catch:**
+
+- Event handlers (use try-catch)
+- Async code (setTimeout, promises)
+- Server-side rendering errors
+- Errors in the error boundary itself
+
+```jsx
+function Component() {
+  const handleClick = () => {
+    throw new Error("Click failed"); // NOT caught by error boundary
+  };
+
+  return <button onClick={handleClick}>Click</button>;
+}
+
+// Fix: use try-catch
+const handleClick = () => {
+  try {
+    // risky code
+  } catch (error) {
+    // handle manually
+  }
+};
+
+// or code like this
+
+useEffect(() => {
+  setTimeout(() => {
+    throw new Error("Timeout error"); // NOT caught
+  }, 1000);
+
+  fetch("/api").catch((err) => {
+    // NOT caught by error boundary
+  });
+}, []);
+```
+
+- Wont catch SSR Errors - server-side rendering happens differently.
+- Errors in the Boundary Itself - can't catch its own errors.
+
+**Why the Distinction?**
+
+Error boundaries hook into React's rendering lifecycle. They catch errors React encounters while building/updating the UI. They don't monitor all JavaScript execution in your app—only the rendering phase.

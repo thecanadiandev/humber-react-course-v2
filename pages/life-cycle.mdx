@@ -1,0 +1,207 @@
+---
+toc: false
+---
+
+A component in React goes through a series of phases from the moment it is :
+
+- created and added to the DOM,
+- to when it gets updated due to changes in state or props,
+- and finally when it is removed from the DOM.
+
+Understanding these lifecycle phases is crucial for managing side effects, optimizing performance, and ensuring proper resource cleanup in your React applications.
+
+# Component Lifecycle
+
+- Component lifecycle methods are special methods that get called at different stages of a component's existence (mounting, updating, unmounting).
+- In functional components, we use the `useEffect` hook to handle side effects and lifecycle events.
+- Side effects include data fetching, subscriptions, or manually changing the DOM.
+
+- Common lifecycle events include:
+  - **Mounting**: When the component is first added to the DOM.
+  - **Updating**: When the component's props or state change.
+  - **Unmounting**: When the component is removed from the DOM.
+
+## Component Lifecycle Phases explained
+
+A React component's lifecycle begins with the **mount phase**, which occurs when the component is first created and inserted into the DOM. During mounting, React calls your component function, executes any code inside it, runs useState to initialize state, and renders the JSX to the screen. After the initial render completes, React triggers any useEffect hooks with empty dependency arrays—this is where you typically fetch initial data, set up subscriptions, or perform one-time setup tasks.
+
+Once mounted, the component enters the **update phase** whenever its state or props change. Each state update triggers a re-render where React calls your component function again with the new state values, compares the new output with the previous Virtual DOM, and updates only the changed parts of the actual DOM. During updates, useEffect hooks with dependencies run if their specified values have changed—React compares the previous and current dependency values, and if they differ, it first runs any cleanup function from the previous effect, then executes the effect again with the new values.
+
+Finally, when the component is removed from the UI, it enters the **unmount phase**. React removes the component from the DOM and runs all cleanup functions returned from useEffect hooks—this is your last chance to clean up event listeners, cancel pending requests, clear timers, or close subscriptions to prevent memory leaks. After unmount completes, the component is gone, and if it appears again later, it goes through the entire mount phase from scratch as a brand new instance.
+
+## Understanding useEffect Hook
+
+`useEffect` is React's way of handling side effects in functional components. Side effects are operations that interact with things outside your component—like fetching data from APIs, updating the document title, setting up subscriptions, or manipulating the DOM directly.
+
+### The Three Syntax Patterns
+
+**Pattern 1: Run Once on Mount (Empty Dependency Array)**
+
+When you pass an empty array as the second argument, useEffect runs only once after the component first renders. This is perfect for initial data fetching, setting up subscriptions, or any one-time setup logic. Think of it as the component's initialization phase—it happens once and never repeats unless the component unmounts and mounts again.
+
+```jsx
+useEffect(() => {
+  // This runs once on mount
+  fetchData();
+}, []); // Empty dependency array
+```
+
+**Pattern 2: Run When Dependencies Change (Dependency Array with Values)**
+
+When you pass an array containing specific state or prop values, useEffect runs whenever any of those values change. React compares the previous values with the current ones, and if anything is different, it triggers the effect. This is ideal for responding to specific changes—like refetching data when a user ID changes, updating the page title when a counter changes, or recalculating something when related values update.
+
+```jsx
+useEffect(() => {
+  // runs when 'id' changes
+  fetchData(id);
+}, [id]); // Dependency array with 'id'
+```
+
+**Pattern 3: Run on Every Render (No Dependency Array)**
+
+When you omit the dependency array entirely, useEffect runs after every single render—both the initial mount and every subsequent update. This pattern is rarely used because it can cause performance issues, but it's useful when you need to perform an action after absolutely any change in your component.
+
+```jsx
+useEffect(() => {
+  // runs on every render of the component
+  fetchData();
+});
+```
+
+### How Cleanup Works
+
+The cleanup function is what you return from useEffect. React calls this function before running the effect again (if dependencies changed) or when the component unmounts completely. It's your opportunity to clean up anything you set up in the effect—remove event listeners, cancel network requests, clear timers, or close subscriptions.
+
+For effects that run once on mount, the cleanup runs once on unmount. For effects with dependencies, the cleanup runs before the effect executes again with new values—this prevents memory leaks and stale references. If your effect doesn't create anything that needs cleanup (like a simple console.log), you don't need to return anything. The cleanup function ensures your component doesn't leave behind subscriptions, listeners, or timers that would continue running even after the component is gone, which would cause memory leaks and unexpected behavior.
+
+```jsx
+useEffect(() => {
+  const id = setInterval(() => {
+    console.log("Tick");
+  }, 1000);
+
+  // Cleanup function
+  return () => {
+    clearInterval(id); // Clear the interval on unmount or before re-running effect
+  };
+}, []);
+```
+
+And to practice the `useEffect` hook, lets add a small local server and fetch data from it.
+
+- Here, we fetch the book data from json-server
+- we use states to handle loading, error and data
+- we use the useEffect hook to fetch data on component mount
+- Data is passed down as props to child components for rendering
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-3b9xyhkn?file=src%2FApp.jsx)
+
+## Hidden problem with useEffect
+
+**Objects and Functions as useEffect Dependencies**
+
+When using objects or functions as dependencies in the `useEffect` dependency array, React may trigger the effect more often than intended. This is because objects and functions are reference types in JavaScript, and their references change on every render, even if their content remains the same.
+
+Using the first example as a base,
+
+One may think, we can offload the fetching logic to a method and then use that method in the useEffect dependencies.
+But this will lead to problems.Run the code, uncomment the function call and see what happens. Open the network tab or console.
+**Note: Do not leave it uncommented. It will lead to memory leak / stack overflow**
+
+```jsx {16,17}
+function fetchBookData() {
+  console.log("fetching book data...");
+  fetch("http://localhost:3001/books")
+    .then((response) => {
+      ...
+    })
+    .then((data) => {
+      ...
+    })
+    .catch((error) => {
+      ...
+    });
+}
+
+useEffect(() => {
+  fetchBookData();
+}, [fetchBookData]);
+```
+
+> [Problem example on Stackblitz](https://stackblitz.com/edit/vitejs-vite-zuesdqdk?file=src%2Fcomponents%2FBookList.jsx)
+
+We passed in a function as a dependency, but since functions are reference types, the reference changes on every render, causing the effect to run each time.
+
+To solve this problem, we can use the function inside the hook like this:
+
+> [Solution](https://stackblitz.com/edit/vitejs-vite-vahugr9r?file=src%2Fcomponents%2FBookList.jsx)
+
+The problem exists with objects too. Consider this example:
+
+```jsx {8,18}
+const fetchConfig = {
+  url: "http://localhost:3001/books",
+  method: "GET",
+};
+
+useEffect(() => {
+  console.log("fetching book data...");
+  fetch(fetchConfig.url, { method: fetchConfig.method })
+    .then((response) => {
+      ...
+    })
+    .then((data) => {
+      ...
+    })
+    .catch((error) => {
+      ...
+    });
+}, [fetchConfig]);
+```
+
+> [Problem example on Stackblitz](https://stackblitz.com/edit/vitejs-vite-8tpyxgpi?file=src%2Fcomponents%2FBookList.jsx)
+
+Here, even though we are passing the same filter values, the object reference changes on every render, causing the effect to run each time.
+
+**The Problem:**
+
+Objects and functions are recreated on every render with new references, even if their content is identical. This causes useEffect to run unnecessarily.
+
+**The Solution:**
+
+- Use primitive values (strings, numbers, booleans) in the dependency array whenever possible.
+- Use the `useMemo` hook to memoize objects and the `useCallback` hook to memoize functions, ensuring stable references across renders.
+
+> [Stackblitz example with useCallback](https://stackblitz.com/edit/vitejs-vite-fuphvgsd?file=src%2Fcomponents%2FBookList.jsx)
+
+or, if we like to try the useMemo way,
+
+> [Stackblitz example with useMemo](https://stackblitz.com/edit/vitejs-vite-gql4wj5c?file=src%2Fcomponents%2FBookList.jsx)
+
+**Key Principle:**
+
+JavaScript compares references, not content. `{a: 1} !== {a: 1}` and `() => {} !== () => {}`. Extract primitives or memoize to get stable references.
+
+**Rule of thumb**: Use when dependencies cause unnecessary effects or expensive recalculations. Don't overuse. Premature optimization adds complexity.
+
+## Memo
+
+**Purpose:** Prevents component re-renders when props haven't changed. Memoizes the entire component.
+
+**When to Use:**
+
+- Component re-renders frequently but props rarely change
+- Expensive render logic (complex calculations, large lists)
+- Pure components that depend only on props
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-rdx1hhvx?file=src%2Fcomponents%2FBookList.jsx)
+
+In the above example, check how the useage of memo prevents unnecessary render for the Cards component when the parent App re-renders due to state changes unrelated to Cards.
+
+## Tip: Relationship to Other Hooks
+
+- `memo()` - memoize component
+- `useMemo()` - memoize value
+- `useCallback()` - memoize function
+
+Often used together: `useCallback`/`useMemo` to stabilize props passed to `memo()` components.

@@ -1,0 +1,419 @@
+---
+toc: false
+---
+
+# React context
+
+Context provides a way to pass data through the component tree without having to pass props down manually at every level. It is designed to share data that can be considered "global" for a tree of React components, such as the current authenticated user, theme, or preferred language. Context should be used sparingly because it makes component reuse more difficult. Also, it can lead to performance issues if not used carefully, as any change in context will re-render all components that consume it. It is recommended for low frequency updates like themes, user settings etc.
+
+## Creating a Context
+
+To create a context, we use the `createContext` function from React. This function returns a Context object with two components: a Provider and a Consumer.
+
+**Create context**
+
+```jsx {4,27}
+import { createContext, useEffect, useState } from "react";
+
+// Create a Context for the book data
+export const BookContext = createContext();
+
+const BookContextProvider = ({ children }) => {
+  const [books, setBooks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    ...
+
+    fetch('http://localhost:3001/books')
+      .then((res) => {
+        ..
+      })
+      .then((data) => {
+        ...
+      })
+      .catch((err) => {
+        ...
+      });
+  }, []);
+
+  return (
+    <BookContext.Provider value={{ books, loading, error }}>
+      {children}
+    </BookContext.Provider>
+  );
+};
+
+export default BookContextProvider;
+
+```
+
+Now that we have the Context, we need to wrap the component tree with the `BookContextProvider` so that any component inside it can access the context values.
+
+```jsx {5,8}
+import BookContextProvider from "./context/BookContext";
+
+function App() {
+  return (
+    <BookContextProvider>
+      <Navbar />
+      <BookList />
+    </BookContextProvider>
+  );
+}
+
+export default App;
+```
+
+**Consuming Context**
+
+Any component that needs access to the context values can use the `useContext` hook. We dont need to pass them down as props.
+
+```jsx {1,3,6}
+import React, { useContext } from 'react';
+
+import { BookContext } from '../context/BookContext';
+
+const BookList = () => {
+  const { books, loading, error } = useContext(BookContext);
+
+   ...
+
+  return (
+    ...
+  );
+};
+
+export default BookList;
+```
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-wczkuesh?file=src%2Fcomponents%2FBookList.jsx)
+
+Here, we saw a practical implementation where we used context to manage state across apps. No other state management libraries like redux or jotai or zustand etc
+
+For the question, is Context a state management library?
+
+**The answer is NO.**
+
+Context is a way to share state, but it does not provide advanced state management features like reducers, middleware, or devtools that dedicated state management libraries offer. However, for many applications, especially smaller ones, using Context for state management can be sufficient and simpler than introducing an additional library.
+
+When context value changes, only components that consume that context will re-render, not necessarily the entire tree.
+
+With complex apps, we need to inspect the state, time travel debugging, performance optimizations like memoization etc. Not just the ability to take state from point A to point B. That merely bypasses the prop-drilling problem. There are much more bigger problems to solve in state management.
+
+## Another Context problem
+
+When using context, beware of these pitfalls:
+
+```jsx {3,6, 16}
+// BAD: Creates new object on every App render
+function App() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <CounterContext.Provider value={{ count, setCount }}>
+      {/* All consumers re-render even if count didn't change! */}
+    </CounterContext.Provider>
+  );
+}
+
+// GOOD: Memoize the value
+function App() {
+  const [count, setCount] = useState(0);
+
+  const value = useMemo(() => ({ count, setCount }), [count]);
+
+  return (
+    <CounterContext.Provider value={value}>
+      {/* Consumers only re-render when count actually changes */}
+    </CounterContext.Provider>
+  );
+}
+```
+
+## Context API at Scale
+
+**Performance Issues:**
+
+- Every context value change re-renders **all** consuming components, even if they only use part of the context
+- No built-in selector mechanism—can't subscribe to specific slices of state
+
+**Context Proliferation:**
+
+- End up with multiple providers wrapped around the app (ThemeProvider, AuthProvider, CartProvider, ProductProvider...)
+- "Provider hell" in your component tree
+- Hard to track which context provides what data
+
+When the App grows, we end up with something like this:
+
+```jsx
+function App() {
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <UserProvider>
+          <ProductProvider>
+            <CartProvider>
+              <NotificationProvider>
+                <ModalProvider>
+                  <Routes />
+                </ModalProvider>
+              </NotificationProvider>
+            </CartProvider>
+          </ProductProvider>
+        </UserProvider>
+      </AuthProvider>
+    </ThemeProvider>
+  );
+}
+```
+
+One could do this
+
+```jsx
+const AppProviders = ({ children }) => (
+  <ThemeProvider>
+    <AuthProvider>
+      <UserProvider>{children}</UserProvider>
+    </AuthProvider>
+  </ThemeProvider>
+);
+```
+
+Still doesn't solve the performance or organization issues—just hides the nesting.
+
+## Code Organization Issues
+
+**Scattered Logic:**
+
+Each context lives in its own file with its own patterns. AuthContext handles loading one way, CartContext does it differently, ProductContext has yet another approach.
+
+**Inconsistent Actions:**
+
+No standard way to define or dispatch actions. One context uses functions like `addToCart()`, another uses `updateUser()`, another uses an event-like pattern. No consistency.
+
+**Async Complexity:**
+
+Fetching data, handling loading states, and errors are manually implemented in each context. You copy-paste similar logic across multiple providers.
+
+**Example of the mess:**
+
+```jsx
+// AuthContext - one pattern
+const login = async (credentials) => {
+  setLoading(true);
+  try {
+    const user = await api.login(credentials);
+    setUser(user);
+  } catch (error) {
+    setError(error);
+  }
+  setLoading(false);
+};
+
+// CartContext - different pattern
+const addItem = (item) => {
+  // no try catch.
+  setCart([...cart, item]);
+  saveToLocalStorage(cart);
+};
+```
+
+No unified structure. Each developer might implement things differently, making the codebase inconsistent and harder to maintain.
+
+**Debugging Complexity:**
+
+- No DevTools to inspect state changes or time-travel debugging
+- Hard to trace why a component re-rendered
+- Difficult to see the sequence of state updates
+
+**Advanced Requirements:**
+
+- No middleware support for logging, persistence, or side effects
+- Complex state updates require manual coordination between multiple contexts
+- Can't easily implement undo/redo, optimistic updates, or request caching
+
+These issues don't appear in small apps but become painful as complexity grows—leading teams to adopt Redux, Zustand, or similar solutions with better performance optimization and developer tooling.
+
+## Enterprise-Scale Context Limitations
+
+**Lack of Enforced Patterns:**
+
+Context provides no structure. Each team implements state management differently—no guardrails to enforce consistency. Team A uses reducers, Team B uses simple setState, Team C creates custom hooks. Code reviews become difficult when there's no standard.
+
+**Immutability Not Enforced:**
+
+Context doesn't prevent direct state mutations. Developers can accidentally mutate state objects, causing bugs that are hard to trace. No compile-time or runtime checks.
+
+```jsx
+// Easy to do this by mistake
+const updateUser = (newData) => {
+  user.name = newData.name; // Mutation!
+  setUser(user); // Won't trigger re-render
+};
+```
+
+**No Middleware Layer:**
+
+- Can't intercept actions for logging, analytics, or error tracking
+- No standardized way to handle side effects (API calls, timers)
+- Every context reimplements async logic differently
+
+**State Change Traceability:**
+
+In large teams, when a bug occurs, you can't easily answer: "What action caused this state change? Who dispatched it? When?" No action history or audit trail.
+
+**No Type Safety Guarantees:**
+
+Even with TypeScript, context values can be accidentally undefined. No enforcement that context must be provided before consumption.
+
+**Testing Complexity:**
+
+Each context needs custom mocking. No standardized test utilities. Difficult to test state transitions in isolation without rendering the entire provider tree.
+
+**Onboarding Friction:**
+
+New developers face a different state management approach in each module. No documentation can fully capture the inconsistent patterns across teams.
+
+Redux/similar tools provide: strict patterns, middleware, DevTools, immutability enforcement, and a shared mental model—critical for enterprise codebases.
+
+## useReducer
+
+This hook is a step towards moving the architecture closer to a more "redux-like" pattern, where state transitions are centralized and predictable.
+The key idea is to manage state updates through a reducer function that takes the current state and an action, and returns a new state based on the action type. This approach helps in organizing state logic, especially when dealing with complex state transitions.
+
+For complex state logic involving multiple sub-values or when the next state depends on the previous one, we can use the `useReducer` hook. It is an alternative to `useState` that is more suited for managing complex state logic in a predictable way.
+
+For our example, since the data, loading, error states are related, we can group them into a single state object and manage them using `useReducer`.
+
+```jsx
+// book.reducer.js
+
+export const initialState = { books: [], loading: false, error: null };
+
+const reducer = (state, action) => {
+  switch (action.type) {
+    case "FETCH_BOOKS_START":
+      return {
+        ...state,
+        loading: true,
+      };
+    case "FETCH_BOOKS_SUCCESS":
+      return { ...state, books: action.payload, loading: false };
+    case "FETCH_BOOKS_ERROR":
+      return { ...state, error: true };
+    default:
+      return state;
+  }
+};
+
+export default reducer;
+```
+
+and use the reducer in our context provider:
+
+```jsx {4,7}
+import { createContext, useEffect, useReducer } from 'react';
+import bookReducer, { initialState } from './book.reducer';
+
+export const BookContext = createContext();
+
+const BookContextProvider = ({ children }) => {
+  const [state, dispatch] = useReducer(bookReducer, initialState);
+
+  useEffect(() => {
+    dispatch({ type: 'FETCH_BOOKS_START' });
+
+    fetch('http://localhost:3001/books')
+      .then((res) => {
+        ...
+      })
+      .then((data) => {
+        dispatch({ type: 'FETCH_BOOKS_SUCCESS', payload: data });
+      })
+      .catch((err) => {
+        dispatch({ type: 'FETCH_BOOKS_ERROR' });
+      });
+  }, []);
+
+  return (
+    <BookContext.Provider value={{ state, dispatch }}>
+      {children}
+    </BookContext.Provider>
+  );
+};
+
+export default BookContextProvider;
+
+```
+
+and in the BookList component:
+
+```jsx {6}
+import React, { useContext } from "react";
+import Cards from "./Cards";
+import { BookContext } from "../context/BookContext";
+
+const BookList = () => {
+  const { state } = useContext(BookContext);
+
+  if (state.loading) {
+    return ...
+  }
+
+  if (state.error) {
+    return ...
+  }
+
+  return (
+    <div className="container mt-5">
+      <Cards cardItems={state.books} />
+    </div>
+  );
+};
+
+export default BookList;
+```
+
+> [useReducer Stackblitz example](https://stackblitz.com/edit/vitejs-vite-o4uq1m4p?file=src%2Fcontext%2Fbook.reducer.js)
+
+## useReducer for State Management
+
+**What It Provides:**
+
+A reducer pattern (like Redux) within Context—centralizes state logic with predictable action-based updates.
+
+**Pros:**
+
+- Structured state updates through actions
+- Single source of truth for state transitions
+- Easier to test—reducer is a pure function
+- Better for complex state with multiple sub-values
+- More predictable than scattered `setState` calls
+
+**Cons:**
+
+- Still has Context performance issues—all consumers re-render
+- No middleware, DevTools, or built-in async handling
+- Boilerplate increases without Redux tooling
+- Each context still needs its own reducer setup
+- Doesn't solve provider nesting or cross-context coordination
+
+It's better than useState for complex state, but doesn't solve enterprise-scale issues. Good middle ground for medium apps.
+
+## Enterprise Scale State Management
+
+When moving towards enterprise scale apps, we need to think beyond just context and reducers. We need dedicated state management libraries that provide the necessary tooling, patterns, and performance optimizations to handle complex application state effectively.
+
+Some of the requirements include:
+
+- Proper DevTools for inspecting state changes
+- Middleware for side effects and logging
+- Selectors to avoid unnecessary re-renders
+- Standardized patterns across teams
+- Immutability enforcement
+- Time-travel debugging
+- Better testing utilities
+
+That's why libraries like Redux, MobX, Zustand, and others are popular choices for large-scale React applications. They provide the structure and tools needed to manage complex state in a maintainable and efficient way.

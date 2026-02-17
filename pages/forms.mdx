@@ -1,0 +1,378 @@
+---
+toc: false
+---
+
+# Forms
+
+In this section, we will explore how to handle forms in React, including controlled and uncontrolled components, form validation, and best practices for managing form state. Forms are a crucial part of many web applications, and React provides several ways to manage form inputs and submissions effectively.
+
+## Controlled Components
+
+Controlled components are React components that render form elements and control them by keeping the form data in the component's state. This allows you to have full control over the form inputs. So whenever state changes, the form inputs will reflect those changes.
+
+```jsx {4,12,17,18}
+import React, { useState } from "react";
+
+function ControlledForm() {
+  const [name, setName] = useState("");
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    alert(`Submitted name: ${name}`);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <label>
+        Name:
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+      </label>
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+```
+
+Here is a stackblitz example of a controlled form with validations. Nothing fancy, just a form with some state slices connected to the input fields.
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-uywjwjrx?file=src%2FApp.jsx)
+
+## Uncontrolled Components
+
+Uncontrolled components rely on the DOM to manage form data. You can use `refs` to access form values when needed. With refs, it stores the assigned value in the "current" property of the ref object.
+
+```jsx {4,7,13}
+import React, { useRef } from "react";
+
+function UncontrolledForm() {
+  const nameRef = useRef();
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    alert(`Submitted name: ${nameRef.current.value}`);
+  };
+  return (
+    <form onSubmit={handleSubmit}>
+      <label>
+        Name:
+        <input type="text" ref={nameRef} />
+      </label>
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+```
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-ok84ys9f?file=src%2Fcomponents%2FUncontrolled.jsx)
+
+## Form Validation
+
+Form validation is essential to ensure that users provide the correct data before submission. You can implement validation in both controlled and uncontrolled components.
+We have already seen them in the above examples.
+
+## Creating Reusable Form Components with validation
+
+Creating reusable form components can help maintain consistency and reduce code duplication across your application. Here's an example of a reusable input component:
+The moment we go this route, at some point, the complexity increases especially when we need to handle the following.
+
+- Synchronous and asynchronous validations,
+- error handling,
+- form state management
+
+All can become cumbersome. And the JSX can get bloated with all the props being passed around.
+
+This is where libraries like React Hook Form or Formik come into play, providing robust solutions for form management and validation.
+
+In the below example, we create reusable input component and compose them within a form. Here that component encapsulates the label, input field, and error message display logic. That's much better than repeating the same code multiple times.
+
+> [Reusable form Stackblitz example](https://stackblitz.com/edit/vitejs-vite-v4jbmv2b?file=src%2FApp.jsx)
+
+## React hook form
+
+For more complex forms, consider using libraries like **React Hook Form**. It simplifies form management and validation significantly.
+
+Install React Hook Form:
+
+```bash
+npm install react-hook-form
+```
+
+And use it like this:
+
+```jsx {2, 5-9, 20-23,25}
+import React from "react";
+import { useForm } from "react-hook-form";
+
+function HookForm() {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm();
+
+  const onSubmit = (data) => {
+    alert(`Form submitted! Data: ${JSON.stringify(data)}`);
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <div>
+        <label>Username:</label>
+        <input
+          {...register("username", {
+            required: "Username is required",
+            minLength: { value: 3, message: "Minimum length is 3" },
+          })}
+        />
+        {errors.username && (
+          <p style={{ color: "red" }}>{errors.username.message}</p>
+        )}
+      </div>
+      <div>
+        <label>Email:</label>
+        <input
+          type="email"
+          {...register("email", {
+            required: "Email is required",
+            pattern: { value: /^\S+@\S+$/i, message: "Invalid email address" },
+          })}
+        />
+        {errors.email && <p style={{ color: "red" }}>{errors.email.message}</p>}
+      </div>
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+```
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-mgtcuxhr?file=src%2FApp.jsx)
+
+In this example, React Hook Form manages the form state and validation rules declaratively. It reduces boilerplate code and improves performance by minimizing re-renders. The nuances of React Hook Form are worth exploring further for complex form scenarios.
+
+## Resuable form components with React Hook Form
+
+If we go one step further, we can create reusable form components that integrate with React Hook Form. Here's an example of a reusable input component. Its upto you how far you want to go with reusability and abstraction. The key is to strike a balance between flexibility and simplicity, ensuring that your form components are easy to use and maintain across your application.
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-gfssbsgs?file=src%2Fcomponents%2FReactHookForm.jsx)
+
+## Form actions
+
+From React 19+, you can also use form actions to handle form submissions more declaratively. Form actions allow you to define server-side logic that can be triggered by form submissions without needing to write explicit event handlers in your components.
+
+Let's start with a basic form submission. Nothing special. Just an HTML form with an action pointing to an async function. To simulate an async form submission, we have a delay of 2 seconds.
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-c1spzs9f?file=src%2Fcomponents%2FReactHookForm.jsx)
+
+If we click the submit button, for 2 seconds, nothing happens. Let's change that with form actions. If we create a separate component for the submit button, and use the `useFormStatus` hook, we can read the pending state of the form submission. So, we could use that flag to disable the button and show a loading state. Important to note that the `useFormStatus` hook must be called from a component that is a child of the form. Now, we have access to the pending state of the form submission.
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-2twvgfce?file=src%2Fcomponents%2FReactHookForm.jsx)
+
+We could also use the `useActionState` hook in the form component itself to get the action function, submission state, and previous submission result.
+
+```jsx
+async function submitAction(prevState, formData) {
+  //logic
+}
+
+const [state, formAction, isPending] = useActionState(submitAction, {
+  success: false,
+  message: "",
+  error: null,
+});
+```
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-pd1lyo4x?file=src%2Fcomponents%2FReactHookForm.jsx)
+
+## When to use what
+
+**useActionState:**
+
+- When you need to track the result/state of a form submission (success/error messages, returned data)
+- When you want automatic pending state management
+- When building forms that need to show feedback after submission
+- Server Actions in Next.js or similar frameworks
+- When you need access to previous state in your action
+- Progressive enhancement - works without JavaScript
+
+**Form action prop (basic):** `<form action={submitFunction}>`
+
+- Simple forms that just need to submit data
+- When you don't need to track submission state in the component
+- Quick prototypes or simple use cases
+- When you're managing state externally (like in a parent component)
+
+**useFormStatus:**
+
+- When you need pending state in a child component of the form
+- Building reusable submit buttons that show loading states
+- When you want to disable/style form elements during submission
+- Must be used in a component that's a child of the form, not the form component itself
+
+**Traditional useState + onSubmit:**
+
+- Complex client-side validation before submission
+- When you need full control over the submission process
+- Forms that don't use server actions
+- When you need to prevent default behavior conditionally
+- React 18 or earlier (no form actions available)
+
+**General rule:**
+
+- useActionState: useful whenever you need to track the state of a form submission, regardless of where it runs. (client or server)
+- Need pending state in child components: useFormStatus
+- Simple client-side forms: action prop with async function
+- Complex client logic or React 18: useState + handleSubmit
+
+**Benefits Over Traditional Approach:**
+
+**Old Way:**
+
+```jsx
+const [loading, setLoading] = useState(false);
+const [error, setError] = useState(null);
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  try {
+    await api.submit(data);
+  } catch (err) {
+    setError(err);
+  }
+  setLoading(false);
+};
+```
+
+**New Way:** No manual state for loading/errors, no `preventDefault()`, cleaner API.
+
+**When to Use:** Form-heavy apps, progressive enhancement needs, Next.js server actions for simplified backend integration.
+
+## Refactor form action outside component
+
+You can also define the form action outside the component for better separation of concerns:
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-vfam9fzd?file=src%2Fcomponents%2FReactHookForm.jsx)
+
+## Asynchronous Form Actions
+
+**Form actions ARE asynchronous by default** - that's the whole point of React 19's form actions feature.
+
+**Multiple Async Operations:**
+
+```jsx
+async function submitForm(prevState, formData) {
+  // Multiple awaits work fine
+  const user = await createUser(formData);
+  await sendEmail(user.email);
+  await logActivity(user.id);
+
+  return { success: true };
+}
+```
+
+All async work happens automatically. `isPending` covers the entire chain.
+
+**Key Point:** You don't "enable" async actions—they're inherently async. React handles the pending state tracking for you.
+
+**`useFormStatus` vs `useActionState`:**
+
+- `useActionState` - use in the component with the `<form>` to get state and action
+- `useFormStatus` - use in **child components inside the form** to read pending state
+
+## Optimistic UI
+
+There is a useOptimistic hook that allows you to create optimistic updates for forms and other interactions.
+
+```jsx
+import React, { useState, useOptimistic, useTransition } from "react";
+
+function LikeButton() {
+  const [likes, setLikes] = useState(0);
+  const [optimisticLikes, addOptimisticLike] = useOptimistic(
+    likes,
+    (currentLikes, amount) => currentLikes + amount,
+  );
+  const [isPending, startTransition] = useTransition();
+
+  async function likePost() {
+    ...
+  }
+
+  const handleLike = async () => {
+    startTransition(async () => {
+      addOptimisticLike(1);
+
+      try {
+        await likePost();
+        setLikes((prev) => prev + 1);
+      } catch (error) {
+        alert("Failed to like!");
+      }
+    });
+  };
+
+  return (
+    <div className="container mt-5">
+      <div className="card text-center p-5">
+        <h3>useOptimistic Example</h3>
+
+        <div className="my-4">
+          <h1 style={{ fontSize: "4rem" }}>
+            {optimisticLikes !== likes && "⏳ "}
+            ❤️ {optimisticLikes}
+          </h1>
+        </div>
+
+        <button
+          className="btn btn-danger btn-lg"
+          onClick={handleLike}
+          disabled={isPending}
+        >
+          {isPending ? "Liking..." : "Like"}
+        </button>
+
+        <div className="alert alert-info mt-4">
+          <p>Click Like - counter updates instantly!</p>
+          <p>Server takes 2 seconds to respond</p>
+          <p>20% chance to fail and revert</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default LikeButton;
+```
+
+**How useOptimistic works - simple flow:**
+
+You have two like counts:
+
+- **Real likes** - stored in `likes` state (starts at 0)
+- **Optimistic likes** - what the user sees on screen (starts at 0)
+
+**When user clicks Like button:**
+
+1. `addOptimisticLike(1)` runs IMMEDIATELY - this adds 1 to the displayed count instantly
+2. User sees 1 like on screen right away (even though server hasn't confirmed)
+3. Behind the scenes, your API call starts (takes 2 seconds)
+4. If API succeeds: `setLikes(prev => prev + 1)` updates the real count to 1
+5. Now both real and optimistic counts are 1 - they match
+6. If API fails: optimistic count automatically reverts back to match the real count (back to 0)
+
+**Key point:**
+
+- `addOptimisticLike` changes what the user SEES immediately
+- `setLikes` changes the ACTUAL state after server confirms
+- If server fails, optimistic automatically goes back to match actual state
+
+**Why two counts?**
+
+- Optimistic count = instant feedback for user
+- Real count = source of truth from server
+- If they don't match, you know something is still pending
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-mtumqr4v?file=src%2Fcomponents%2FOptimistic.jsx)

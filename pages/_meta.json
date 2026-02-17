@@ -1,18 +1,16 @@
 {
   "index": "Welcome react",
-  "core-fundamentals": "Core Fundamentals",
-  "controlled": "Controlled components",
-  "lifecycle": "Component lifecycle",
-  "uncontrolled": "Uncontrolled components",
-  "apis": "Dealing with APIs",
-  "about": {
-    "title": "About",
-    "type": "page"
-  },
-  "contact": {
-    "title": "Contact ↗",
-    "type": "page",
-    "href": "https://twitter.com/shuding_",
-    "newWindow": true
-  }
+  "state-intro": "State intro",
+  "styling": "Styling",
+  "refs": "Refs",
+  "life-cycle": "Lifecycle & Effects",
+  "context": "Context",
+  "hooks": "All React Hooks",
+  "class": "Class Components (legacy)",
+  "connect-apis": "Connecting APIs",
+  "forms": "Forms",
+  "beyond-basics": "Beyond basics",
+  "redux": "Redux",
+  "routing": "Routing",
+  "tanstack": "TanStack Query"
 }

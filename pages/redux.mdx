@@ -1,0 +1,528 @@
+---
+toc: false
+---
+
+# Welcome Redux!
+
+Redux is a state management library for JavaScript applications, commonly used with React. It provides a centralized store—a single source of truth for your application state—and enforces a predictable, unidirectional data flow.
+
+In practical terms, Redux creates a global state object accessible from any component in your app. However, this state cannot be mutated directly. Instead, Redux enforces strict rules for state updates: you dispatch actions that describe what happened, and pure functions called reducers specify how the state should change in response.
+
+This architecture ensures that state changes are predictable, traceable, and consistent across your entire application. Importantly, the Redux store exists independently of React's component tree, making your state logic portable and easier to test.
+
+The Redux store is a JavaScript object in the browser's memory (RAM), specifically in the JavaScript runtime environment. It exists for the lifetime of your application session. Since it lives outside of react components, we need a way to connect our React components to the Redux store. This is typically done using the `react-redux` library, which provides hooks like `useSelector` and `useDispatch` to interact with the Redux store from within React components.
+
+Redux provides:
+
+- Centralized state - one store, one place to look
+- Predictable state updates - actions describe what happened, reducers describe how state changes
+- Time-travel debugging - see every action and state change
+- Separation of concerns - state logic lives separate from UI components
+
+## Why not just useContext?
+
+While React's Context API is great for passing data through the component tree without prop drilling, it has limitations for complex state management:
+
+- Performance - Context updates re-render all consumers, leading to performance issues with frequent updates.
+- Scalability - As apps grow, managing state with Context can become unwieldy and lead to tightly coupled components.
+- Debugging - Context lacks built-in tools for tracking state changes and debugging
+
+Redux addresses these issues with a more structured approach to state management, making it suitable for larger applications with complex state needs.
+
+## Core Concepts
+
+- Store - the centralized state object
+- Actions - plain objects describing what happened
+- Reducers - pure functions that specify how state changes in response to actions
+- Dispatch - the method to send actions to the store
+- Selectors - functions to read specific pieces of state from the store
+- Middleware - extend Redux with custom functionality (e.g., async actions)
+- DevTools - powerful tools for inspecting and debugging state changes
+
+## When to Use Redux
+
+Redux is most beneficial in applications with:
+
+- Complex state logic involving multiple interdependent pieces of state
+- Frequent state updates that need to be predictable and traceable
+- Large codebases with multiple developers requiring consistent patterns
+- Need for advanced debugging and time-travel capabilities
+
+For simpler applications, React's built-in state management (useState, useReducer, Context) may suffice without the added complexity of Redux.
+
+## The flow
+
+1. **Dispatching Actions:** Components dispatch actions to signal that something happened (e.g., user interaction, API response).
+2. **Reducers Handle Actions:** Reducers receive the current state and the dispatched action, returning a new state based on the action type and payload.
+3. **State Update:** The Redux store updates its state with the new state returned by the reducer.
+4. **Components Re-render:** Components subscribed to the store (using `useSelector`) re-render with the updated state.
+
+## What about Async Logic?
+
+Redux by default is synchronous.
+
+When an action is dispatched, it is sent to the reducers immediately. And we dispatch an object describing the action. This is synchronous. Instead of dispathing an object, we can also dispatch a function. This function can contain asynchronous logic, and once the async operation is complete, we can dispatch a regular action object to update the state.
+
+To handle asynchronous logic (like API calls), we typically use middleware such as `redux-thunk` or `redux-saga`. These middleware allow us to write action creators that return functions (thunks) or manage side effects in a more structured way (sagas).
+
+## Installation
+
+To get started with Redux in a React application, you'll need to install the following packages:
+
+```bash
+npm install redux react-redux
+```
+
+For handling asynchronous actions, you might also want to install `redux-thunk`:
+
+```bash
+npm install redux-thunk
+```
+
+With these packages installed, you can start setting up your Redux store, defining actions and reducers, and connecting your React components to the Redux store using the `react-redux` library.
+
+```js
+import { createStore } from "redux";
+
+function counterReducer(state = { value: 0 }, action) {
+  switch (action.type) {
+    case "counter/incremented":
+      return { value: state.value + 1 };
+    case "counter/decremented":
+      return { value: state.value - 1 };
+    default:
+      return state;
+  }
+}
+
+// Create a Redux store holding the state of your app.
+// Its API is { subscribe, dispatch, getState }.
+let store = createStore(counterReducer);
+
+store.subscribe(() => console.log(store.getState()));
+store.dispatch({ type: "counter/incremented" });
+// {value: 1}
+store.dispatch({ type: "counter/incremented" });
+// {value: 2}
+store.dispatch({ type: "counter/decremented" });
+// {value: 1}
+```
+
+> [Working stackblitz example for a counter with redux](https://stackblitz.com/edit/vitejs-vite-n2hxxokw?file=src%2FApp.jsx)
+
+## Asynchronous Example with redux-thunk
+
+In this example, we install the middleware `redux-thunk` to handle asynchronous actions, such as fetching data from an API.
+
+We register the thunk like this
+
+```js
+const store = createStore(usersReducer, applyMiddleware(thunk));
+```
+
+- `applyMiddleware(thunk)`- A store enhancer that adds middleware capabilities
+- **Middleware** sits between dispatching an action and the moment it reaches the reducer. It's like a checkpoint that can intercept, modify, or handle actions.
+
+Without middleware:
+
+```
+dispatch(action) → Reducer → State Update
+```
+
+With middleware:
+
+```
+dispatch(action) → Thunk Middleware → Reducer → State Update
+                      ↓
+              (checks if action is a function)
+                      ↓
+              (if yes, calls it with dispatch)
+```
+
+> [Working stackblitz example with an API call with redux thunk](https://stackblitz.com/edit/vitejs-vite-3ezfagc2?file=src%2FApp.jsx)
+
+## The Problems with Classic Redux (That Led to Redux Toolkit)
+
+Here are the major pain points developers faced:
+
+### 1. **Too Much Boilerplate**
+
+For one simple feature, you'd write code across multiple files:
+
+```javascript
+// actions/counter.actions.js
+export const INCREMENT = "counter/increment";
+export const DECREMENT = "counter/decrement";
+
+export const increment = () => ({ type: INCREMENT });
+export const decrement = () => ({ type: DECREMENT });
+
+// reducers/counter.reducer.js
+import { INCREMENT, DECREMENT } from "../actions/counter.actions";
+
+const initialState = { value: 0 };
+
+export function counterReducer(state = initialState, action) {
+  switch (action.type) {
+    case INCREMENT:
+      return { ...state, value: state.value + 1 };
+    case DECREMENT:
+      return { ...state, value: state.value - 1 };
+    default:
+      return state;
+  }
+}
+
+// store/index.js
+import { createStore } from "redux";
+import { counterReducer } from "../reducers/counter.reducer";
+
+const store = createStore(counterReducer);
+```
+
+**The complaint:** "I wrote 30 lines of code just to increment a counter!"
+
+---
+
+### 2. **Accidental State Mutations**
+
+Redux requires **immutable updates**, but JavaScript makes it easy to mutate accidentally:
+
+```javascript
+// ❌ WRONG - Mutates state directly
+case 'todos/toggleComplete':
+  const todo = state.todos.find(t => t.id === action.payload);
+  todo.completed = !todo.completed; // MUTATION!
+  return state;
+
+// ✅ CORRECT - But verbose and error-prone
+case 'todos/toggleComplete':
+  return {
+    ...state,
+    todos: state.todos.map(todo =>
+      todo.id === action.payload
+        ? { ...todo, completed: !todo.completed }
+        : todo
+    )
+  };
+```
+
+**The complaint:** "Immutable updates are hard to write correctly, especially for nested data."
+
+---
+
+### 3. **Confusing Store Setup**
+
+Setting up middleware, dev tools, and combining reducers was complicated:
+
+```javascript
+import { createStore, applyMiddleware, combineReducers, compose } from "redux";
+import { thunk } from "redux-thunk";
+import { counterReducer } from "./counter.reducer";
+import { usersReducer } from "./users.reducer";
+
+const rootReducer = combineReducers({
+  counter: counterReducer,
+  users: usersReducer,
+});
+
+const composeEnhancers =
+  (typeof window !== "undefined" &&
+    window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__) ||
+  compose;
+
+const store = createStore(
+  rootReducer,
+  composeEnhancers(applyMiddleware(thunk)),
+);
+```
+
+**The complaint:** "I have to copy-paste this boilerplate for every project and I don't even understand what `compose` does."
+
+---
+
+### 4. **Action Type String Typos**
+
+String constants are error-prone:
+
+```javascript
+// actions.js
+export const ADD_TODO = 'todos/add';
+
+// reducer.js
+case 'todos/ad': // Typo! This case never matches
+  return { ...state, todos: [...state.todos, action.payload] };
+```
+
+**The complaint:** "I spent 2 hours debugging a typo in an action type string."
+
+---
+
+### 5. **Async Logic Required External Libraries**
+
+No built-in way to handle async operations:
+
+```javascript
+// Need to install redux-thunk separately
+npm install redux-thunk
+
+// Then wire it up manually
+import { thunk } from 'redux-thunk';
+const store = createStore(reducer, applyMiddleware(thunk));
+
+// Write verbose async action creators
+export function fetchUsers() {
+  return async function(dispatch) {
+    dispatch({ type: 'users/fetchPending' });
+    try {
+      const response = await fetch('/api/users');
+      const data = await response.json();
+      dispatch({ type: 'users/fetchSuccess', payload: data });
+    } catch (error) {
+      dispatch({ type: 'users/fetchError', payload: error.message });
+    }
+  };
+}
+```
+
+**The complaint:** "Why isn't async handling built-in? Why do I need to manage loading/error states manually for every API call?"
+
+---
+
+### 6. **No Standardized Patterns**
+
+Every team did things differently:
+
+- Some used action creators, others didn't
+- Some used constants for action types, others used strings directly
+- File structure varied wildly (by feature? by type?)
+- Async handling: thunk vs saga vs observables
+
+**The complaint:** "Every Redux codebase looks different. There's no 'right way' to structure things."
+
+---
+
+### 7. **DevTools Not Configured by Default**
+
+You had to manually add this cryptic code:
+
+```javascript
+const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
+```
+
+**The complaint:** "I forgot to add DevTools and now I can't debug my app."
+
+---
+
+## The Community Response:
+
+Developers started saying:
+
+- "Redux is too complex for simple apps"
+- "The boilerplate-to-feature ratio is terrible"
+- "I'm switching to Context API / MobX / Zustand"
+- "Redux has too much ceremony"
+
+---
+
+## Redux Team's Solution: **Redux Toolkit (RTK)**
+
+Redux Toolkit was created to address ALL of these complaints:
+
+- Reduces boilerplate by 70%
+- Built-in Immer for immutable updates (write "mutating" code safely)
+- Store setup in one line with sensible defaults
+- No more action type string typos
+- Built-in thunk support + `createAsyncThunk` for async
+- Opinionated structure that works for most apps
+- DevTools configured automatically
+
+**The Redux team's message:** "We heard you. Here's the modern way to use Redux."
+
+```bash
+npm install @reduxjs/toolkit react-redux
+```
+
+- We install `@reduxjs/toolkit` instead of `redux` directly.
+- Then we set up a slice with `createSlice`.
+- This automatically generates action creators and action types for us.
+- Simplified store setup with `configureStore` that comes with thunk and DevTools out of the box.
+- Provider setup remains the same with `react-redux`.
+- Component uses `useSelector` and `useDispatch` as before.
+
+> [Working stackblitz example with Redux Toolkit](https://stackblitz.com/edit/vitejs-vite-n334ppz7?file=src%2FApp.jsx)
+
+Redux Toolkit:
+
+- One file (usersSlice.js) for everything
+- createAsyncThunk handles pending/fulfilled/rejected automatically
+- createSlice generates action creators automatically
+- Immer built-in - write "mutating" code safely (state.loading = true)
+- configureStore includes thunk middleware + DevTools by default
+- No action type strings - no typos!
+
+Now, we have seen one slice. In a real app, we can have multiple slices for different features (e.g., counterSlice, todosSlice) and combine them in the store.
+
+## Top concepts to learn in Redux Toolkit ( Intermediate + Advanced level )
+
+These are more to explore once you are comfortable with the basics of Redux Toolkit. Use these topics in the course if you have time to explore.
+
+- 1. Multiple Slices and Slice organization (How to structure larger apps with multiple feature slices)
+- 2. Synchronous Actions in Slices (Creating regular (non-async) actions with reducers)
+- 3. Prepare Callbacks (Action Payload Customization- When you need to customize the payload before it reaches the reducer)
+- 4. Selectors & createSelector (Memoization - Efficiently deriving data from state)
+- 5. RTK Query (Data Fetching & Caching - The most powerful RTK feature - eliminates most async thunk boilerplate)
+- 6. Middleware & listenerMiddleware (For side effects and complex async logic)
+- 7. EntityAdapter (Normalized State- For managing collections of items efficiently)
+- 8. TypeScript with Redux Toolkit (Type safety and autocompletion)
+
+## 1. Multiple slices
+
+Let's see how to combine multiple slices in a Redux Toolkit store.
+
+- We created separate slices for users and posts
+- Each slice manages its own state and reducers
+- We combine the slices in the store using `configureStore
+
+> [Working stackblitz example with multiple slices](https://stackblitz.com/edit/vitejs-vite-qyqbvmxp?file=src%2FApp.jsx)
+
+> Install the chrome redux devtools extension to see the state changes. Make sure to open the preview in new tab though.
+
+## 2. Synchronous Actions in Slices
+
+The above example already addressed this point, where we added a synchronous action `postLiked` in the postsSlice.
+
+## 3. Prepare Callbacks
+
+Prepare Callbacks allow you to customize the action payload before it reaches the reducer. This is useful when you need to add metadata or transform the payload. For cases like generating unique IDs, timestamps, or formatting data, this feature is very handy.
+
+> [Working stackblitz example with prepare callbacks](https://stackblitz.com/edit/vitejs-vite-pcetj5rb?file=src%2FApp.jsx)
+
+## 4. Selectors & createSelector
+
+Selectors are functions that extract specific pieces of state from the Redux store. They help keep your components decoupled from the store's structure. If you notice, in the component, we drill through the state to get the posts: `state.posts.postsList`. This actually couples the component to the store structure. If we change the store structure later, we have to update all components using this path. Selectors help us decouple this.
+
+In RTK, we can use `createSelector` from the `reselect` library to create memoized selectors. Memoization ensures that the selector only recomputes when its inputs change, improving performance.
+
+> [Working stackblitz example with selectors](https://stackblitz.com/edit/vitejs-vite-sj26apdd?file=src%2FApp.jsx)
+
+## 5. RTK Query (Data Fetching & Caching)
+
+- we create an api folder with userApi.js
+- uses createApi and fetchBaseQuery to define endpoints
+- auto generates hooks for data fetching (Query, Mutation )
+- in index.js, we add the api.reducer and api.middleware to the store
+- in App.jsx, we use the auto-generated hooks to fetch and display users
+
+Now, if we check the redux store via devTools, we can see the cached data under the userApi slice. Its a reducer just like our other reducers but it manages caching, loading states, and more for us automatically.
+
+**Every API request gets cached here so RTK Query can:**
+
+- Return cached data instantly on subsequent calls
+- Know if data is stale
+- Avoid duplicate requests
+
+Also, we need to register the middleware. This enables features like automatic refetching, caching, and more.
+
+When we call a hook like `useGetUsersQuery()`, here's what happens:
+
+```js
+// 1. Component calls the hook
+const { data, isLoading } = useGetUsersQuery();
+
+// 2. RTK Query dispatches an internal action
+dispatch({
+  type: "usersApi/executeQuery/pending",
+  meta: {
+    requestId: "abc123",
+    arg: { endpointName: "getUsers" },
+  },
+});
+
+// 3. usersApi.middleware intercepts this action
+// It sees: "Oh, this is an API query action!"
+
+// 4. Middleware checks the cache
+if (cacheExists && !isStale) {
+  // Return cached data immediately
+  return cachedData;
+}
+
+// 5. If no cache, middleware makes the fetch request
+fetch("https://jsonplaceholder.typicode.com/users")
+  .then((response) => response.json())
+  .then((data) => {
+    // 6. Middleware dispatches success action
+    dispatch({
+      type: "usersApi/executeQuery/fulfilled",
+      payload: data,
+    });
+  });
+
+// 7. usersApi.reducer receives the action and updates cache
+// 8. Component re-renders with new data
+```
+
+Without the middleware
+
+```js
+// If you forget to add middleware:
+const { data } = useGetUsersQuery();
+
+// RTK Query dispatches action
+dispatch({ type: "usersApi/executeQuery/pending" });
+
+// ❌ No middleware to intercept it!
+// ❌ No fetch request happens
+// ❌ Action just goes to reducer
+// ❌ Data never loads
+// ❌ Console comes up with an error
+```
+
+Let me explain
+
+```js
+const store = configureStore({
+  reducer: {
+    posts: postsReducer,
+    usersApi: usersApi.reducer, // ← Manages API cache
+  },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(usersApi.middleware), // ← Handles API requests
+});
+```
+
+- Reducer - Stores API cache in Redux state
+- Middleware - Intercepts actions, makes API calls, manages cache lifecycle
+
+**Key advantages:**
+
+- Loading/error states automatically
+- Caching (won't refetch if data is fresh)
+- Automatic refetching
+- Request deduplication
+- Optimistic updates
+- Cache invalidation
+
+> [Working stackblitz example with RTK Query](https://stackblitz.com/edit/vitejs-vite-c2xeyy2o?file=src%2Fstore%2Findex.js)
+
+## 6. Middleware & listenerMiddleware
+
+Middleware in Redux Toolkit allows you to extend the store's capabilities by intercepting actions before they reach the reducers. This is useful for logging, crash reporting, performing asynchronous tasks, and more.
+
+> [Working stackblitz example with listenerMiddleware](https://stackblitz.com/edit/vitejs-vite-erhejisw?file=src%2Fstore%2Findex.js)
+
+## 7. EntityAdapter (Normalized State)
+
+Redux Toolkit's `createEntityAdapter` is a powerful utility for managing collections of items in a normalized state structure. It provides pre-built reducers and selectors to handle common operations like adding, updating, and removing items from a collection.
+
+Behind the scenes, it organizes your state into two parts:
+
+- `ids`: An array of item IDs
+- `entities`: An object mapping IDs to item data
+
+> [Working stackblitz example with EntityAdapter](https://stackblitz.com/edit/vitejs-vite-ebzguiiw?file=src%2Fstore%2FusersSlice.js)
+
+## 8. TypeScript with Redux Toolkit
+
+Redux Toolkit has excellent TypeScript support out of the box. It provides type definitions for its APIs, making it easier to work with Redux in TypeScript projects. Better to scaffold a new project locally with Vite and TypeScript template to see the full experience.

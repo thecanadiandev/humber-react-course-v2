@@ -1,0 +1,175 @@
+---
+toc: false
+---
+
+# Refs & DOM access
+
+In React, refs (short for references) provide a way to access and interact with DOM elements or React components directly. They are useful when you need to manage focus, select text, trigger animations, or integrate with third-party libraries that require direct DOM manipulation. React provides the `useRef` hook for functional components to create refs.
+
+**Creating Refs**
+
+```jsx {3,7,8,14}
+import React, { useRef } from "react";
+function TextInput() {
+  const inputRef = useRef(null);
+
+  const focusInput = () => {
+    // Access the DOM element and focus it
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
+
+  return (
+    <div>
+      <input type="text" ref={inputRef} />
+      <button onClick={focusInput}>Focus Input</button>
+    </div>
+  );
+}
+```
+
+## What about using useState?
+
+While `useState` is great for managing state and triggering re-renders, it is not suitable for directly accessing DOM elements. Refs created with `useRef` do not cause re-renders when their values change, making them ideal for storing references to DOM nodes or mutable values that do not affect the rendering of the component.
+
+**When to Use Refs**
+
+- Managing focus on input fields.
+- Triggering animations.
+- Integrating with third-party libraries that require direct DOM access.
+- Storing mutable values that do not require re-rendering.
+- Forms where you need to access input values without controlled components. (eg: values only on submit)
+
+**Caution**
+While refs can be powerful, they should be used sparingly. Overusing refs can lead to code that is harder to maintain and understand. Whenever possible, try to achieve your goals using React's declarative approach and state management before resorting to refs.
+
+## Forwarding Refs ( React 18 or earler )
+
+In some cases, you may want to pass a ref from a parent component to a child component. React provides the `forwardRef` function to facilitate this.
+By default, refs do not get passed down to child components.
+
+Using `forwardRef`, you can explicitly forward a ref to a specific DOM element within the child component.
+
+```jsx {3,18}
+import React, { forwardRef, useRef } from "react";
+
+const CustomInput = forwardRef((props, ref) => (
+  <input type="text" ref={ref} {...props} />
+));
+
+function ParentComponent() {
+  const inputRef = useRef(null);
+
+  const focusInput = () => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
+
+  return (
+    <div>
+      <CustomInput ref={inputRef} />
+      <button onClick={focusInput}>Focus Input</button>
+    </div>
+  );
+}
+```
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-rqryad4x?file=src%2FApp.jsx)
+
+With React 19+ , we can use `useRef` directly on child components without needing `forwardRef`.
+
+```jsx {4,7,17}
+import React, { useRef } from "react";
+
+function CustomInput(props, ref) {
+  return <input type="text" ref={ref} {...props} />;
+}
+function ParentComponent() {
+  const inputRef = useRef(null);
+
+  const focusInput = () => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
+
+  return (
+    <div>
+      <CustomInput ref={inputRef} />
+      <button onClick={focusInput}>Focus Input</button>
+    </div>
+  );
+}
+```
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-td5zzvig?file=src%2Fcomponents%2FCustomInput.jsx)
+
+## useImperativeHandle
+
+The problem is that refs provide direct access to the DOM element, which may expose more functionality than you want to share with the parent component.
+
+When using `forwardRef`, you might want to customize the instance value that is exposed to parent components when they use a ref. The `useImperativeHandle` hook allows you to do this.
+
+```jsx {3,6,19}
+import React, { forwardRef, useImperativeHandle, useRef } from "react";
+
+const CustomInput = forwardRef((props, ref) => {
+  const inputRef = useRef(null);
+
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    },
+    clear: () => {
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
+    },
+  }));
+
+  return <input type="text" ref={inputRef} {...props} />;
+});
+
+function ParentComponent() {
+  const inputRef = useRef(null);
+
+  return (
+    <div>
+      <CustomInput ref={inputRef} />
+      <button onClick={() => inputRef.current.focus()}>Focus Input</button>
+      <button onClick={() => inputRef.current.clear()}>Clear Input</button>
+    </div>
+  );
+}
+```
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-lvstah3a?file=src%2Fcomponents%2FCustomInput.jsx)
+
+When using refs to access a component, a component can choose what methods or properties to expose to the parent component, providing better encapsulation and control over its internal behavior.
+
+## Portals
+
+Portals provide a way to render children into a DOM node that exists outside the DOM hierarchy of the parent component. This is useful for modals, tooltips, and other UI elements that need to visually break out of their parent container. Especially for accessibility needs like modals that need to be at the end of the document body.
+
+```jsx {5,6,7}
+import React from "react";
+import ReactDOM from "react-dom";
+
+function Modal({ children }) {
+  return ReactDOM.createPortal(
+    <div className="modal">{children}</div>,
+    document.getElementById("modal-root"), // Ensure this div exists in your HTML
+  );
+}
+```
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-sefeob3p?file=src%2Fcomponents%2FModal.jsx)
+
+So even though the `Modal` component is used within another component, its content will be rendered inside the `modal-root` div, which is outside the main app's DOM hierarchy.
+Inspect the DOM to see how it works. Similarly, if we have needs like a notification system that needs to render messages at a specific place in the DOM, we can use portals for that as well.
+
+By this time, you should have a good understanding of how refs work in React, including how to create and use them, forward them to child components, customize their behavior with `useImperativeHandle`, and render components outside the main DOM hierarchy using portals. Refs are a powerful tool for managing direct DOM access and interactions in your React applications.

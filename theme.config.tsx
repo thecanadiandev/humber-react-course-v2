@@ -20,20 +20,14 @@ const config: DocsThemeConfig = {
       <span style={{ fontWeight: 700, fontSize: '1.25rem', color: '#ffffff' }}>React</span>
     </div>
   ),
-  project: {
-    link: 'https://github.com/shuding/nextra-docs-template',
-  },
   sidebar: {
     defaultMenuCollapseLevel: 1
-  },
-  chat: {
-    link: 'https://discord.com',
   },
   docsRepositoryBase: 'https://github.com/shuding/nextra-docs-template',
   footer: {
     text: (
       <div style={{ textAlign: 'center', width: '100%', color: '#d1d5db' }}>
-        Made with ❤️ by Hari
+        Made with ❤️ by the canadiandev
       </div>
     ),
   },

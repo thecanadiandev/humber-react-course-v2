@@ -1,0 +1,111 @@
+---
+toc: false
+---
+
+# Styling Options in React
+
+**Regular CSS Classes**
+
+```jsx
+import "./styles.css";
+<div className="container">Content</div>;
+```
+
+Global scope—styles apply everywhere. Risk of naming conflicts.
+
+**CSS Modules**
+
+```jsx {2}
+import styles from "./Component.module.css";
+<div className={styles.container}>Content</div>;
+```
+
+Scoped locally to the component. Class names are auto-generated to avoid conflicts. Same file structure as regular CSS but isolated.
+
+**Tailwind CSS**
+
+```jsx
+<div className="flex items-center gap-4 p-6 bg-blue-500">Content</div>
+```
+
+Utility-first approach. Compose styles with pre-defined classes directly in JSX.
+
+**CSS-in-JS (Styled Components, Emotion)**
+
+```jsx
+const Button = styled.button`
+  padding: 12px 24px;
+  background: blue;
+`;
+<Button>Click</Button>;
+```
+
+Write CSS directly in JavaScript. Dynamic styling based on props. Component-scoped by default.
+
+**Inline Styles**
+
+```jsx
+<div style={{ padding: "10px", color: "red" }}>Content</div>
+```
+
+JavaScript object syntax. Limited—no pseudo-classes or media queries.
+
+## Styled components
+
+**Installation**
+
+```bash
+npm install styled-components
+```
+
+**Basic Usage**
+
+```jsx
+import styled from "styled-components";
+
+// Create styled components
+const Container = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+`;
+
+const Button = styled.button`
+  background: ${(props) => (props.primary ? "#007bff" : "#6c757d")};
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 0.8;
+  }
+`;
+
+// Use them like regular components
+function App() {
+  return (
+    <Container>
+      <Button primary>Primary Button</Button>
+      <Button>Secondary Button</Button>
+    </Container>
+  );
+}
+```
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-pb3rqqwc?file=src%2FApp.jsx)
+
+**Key Points:**
+
+- Import `styled` from the library
+- Use tagged template literals to write CSS
+- Access props with `${props => ...}`
+- Supports pseudo-classes, nesting, media queries
+- Auto-generates unique class names
+
+Which one to choose is based on your project needs and team preferences!. This chapter is aimed at giving you a good overview of the popular styling options in React.
+
+### Emotion
+
+There are other options too like Emotion. It has a similar API to styled-components but with some differences in features and performance. You can check out the [Emotion documentation](https://emotion.sh/docs/introduction) for more details.

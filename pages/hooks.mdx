@@ -1,0 +1,662 @@
+---
+toc: false
+---
+
+# React hooks summary
+
+Here is a list of all the major React hooks along with a brief description of each. Some, we have already seen in prior sections.
+
+Hooks are classified based on their purpose:
+
+- State Hooks (where we hold slices of state)
+- Context Hooks (where we bypass props and pass data directly from a provider to consumers)
+- Ref Hooks (where we hold mutable values or DOM references)
+- Effect Hooks (where we perform side effects like data fetching or subscriptions)
+- Performance Hooks (where we optimize rendering and memoization)
+- Other Hooks
+
+## State Hooks
+
+State Hooks let components manage and "remember" information.
+
+### useState
+
+#### Overview
+
+The `useState` hook declares a state variable that can be updated directly, returning the current state and a function to update it.
+
+#### Core Problem
+
+Without state management, functional components cannot retain data between renders. Regular variables reset on every render cycle, and modifying them doesn't trigger UI updates.
+
+#### Solution
+
+`useState` provides persistent state that survives re-renders and automatically synchronizes with the component's visual output when updated.
+
+#### Basic Usage
+
+```jsx
+const [count, setCount] = useState(0);
+```
+
+> [Stackblitz example for a simple counter](https://stackblitz.com/edit/vitejs-vite-bgkrhyyw?file=src%2FApp.jsx)
+
+#### Key Patterns
+
+**Multiple State Variables**
+
+```jsx
+const [name, setName] = useState("");
+const [age, setAge] = useState(0);
+```
+
+**Object State**
+When storing objects, spread the previous state to preserve unmodified properties:
+
+```jsx
+const [user, setUser] = useState({
+  firstName: "",
+  lastName: "",
+  email: "",
+});
+
+// Update a single property
+setUser((prev) => ({ ...prev, firstName: "John" }));
+```
+
+**Functional Updates**
+When the next state depends on the previous state, use the functional update form to ensure you're working with the most recent value:
+
+```jsx
+// Incorrect - may use stale state
+setCount(count + 1);
+setCount(count + 1); // Both use the same initial value
+
+// Correct - uses most recent state
+setCount((prev) => prev + 1);
+setCount((prev) => prev + 1); // Each uses the updated value
+```
+
+---
+
+### useReducer
+
+#### Overview
+
+The `useReducer` hook manages complex state logic with a reducer function, often used as an alternative to `useState` for complex state transitions.
+
+#### Core Problem
+
+Components with multiple related state variables or complex update logic become difficult to maintain. State transitions scattered across multiple `setState` calls are hard to reason about, test, and debug.
+
+#### Solution
+
+`useReducer` consolidates all state update logic into a single reducer function, making state transitions explicit and predictable. It's particularly effective for state with multiple sub-values or when the next state depends on the previous state in complex ways.
+
+```jsx
+const [state, dispatch] = useReducer(reducer, initialState);
+
+function reducer(state, action) {
+  switch (action.type) {
+    case "INCREMENT":
+      return { count: state.count + 1 };
+    case "DECREMENT":
+      return { count: state.count - 1 };
+    default:
+      return state;
+  }
+}
+```
+
+> [Stackblitz example of a simple api call](https://stackblitz.com/edit/vitejs-vite-zagp8mtq?file=src%2FExample.jsx)
+
+#### When to Use
+
+- State logic contains multiple sub-values
+- Next state depends on previous state in complex ways
+- State transitions need to be testable in isolation
+- Combining with `useContext` for application-level state management (We seen it already in the previous section)
+
+---
+
+## Context Hooks
+
+Context Hooks help components receive information from distant parents without prop drilling.
+
+### useContext
+
+#### Overview
+
+The `useContext` hook subscribes to React context and returns the current context value provided by the nearest Provider component.
+
+#### Core Problem
+
+Passing data through multiple component layers (prop drilling) creates maintenance overhead, couples components unnecessarily, and makes refactoring difficult. Global state like themes, authentication, or language preferences shouldn't require manual propagation through every component level.
+
+#### Solution
+
+`useContext` provides direct access to context values from any component in the tree, automatically re-rendering consumers when context values change.
+
+```jsx
+const theme = useContext(ThemeContext);
+```
+
+> [Stackblitz example with a simple theme switch with context](https://stackblitz.com/edit/vitejs-vite-ho5hukgw?file=src%2FExample.jsx)
+
+---
+
+## Ref Hooks
+
+Ref Hooks allow components to hold information that is not used for rendering, such as DOM nodes or timeout IDs.
+
+### useRef
+
+#### Overview
+
+The `useRef` hook declares a mutable ref object that persists across re-renders without causing the component to update when it changes.
+
+#### Core Problem
+
+Some values need to persist between renders but shouldn't trigger UI updates when changed. Examples include DOM references, timer IDs, and previous values for comparison.
+
+#### Solution
+
+`useRef` returns a mutable object with a `current` property that can be modified directly without causing re-renders.
+
+```jsx
+const inputRef = useRef(null);
+
+const focusInput = () => {
+  inputRef.current.focus();
+};
+
+return <input ref={inputRef} type="text" />;
+```
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-gdf47yx1?file=src%2FApp.jsx)
+
+### useImperativeHandle
+
+#### Overview
+
+The `useImperativeHandle` hook customizes the ref value that is exposed to parent components when using `forwardRef` (rarely used in typical application code).
+
+#### Core Problem
+
+When using refs, parents typically receive the entire DOM element. Sometimes you need to expose only specific methods, hide implementation details, or create a custom imperative API.
+
+#### Solution
+
+Combined with `forwardRef`, `useImperativeHandle` lets you define exactly what the parent can access through the ref.
+
+```jsx
+const VideoPlayer = forwardRef((props, ref) => {
+  const videoRef = useRef(null);
+
+  useImperativeHandle(ref, () => ({
+    play() {
+      videoRef.current.play();
+    },
+    pause() {
+      videoRef.current.pause();
+    },
+    stop() {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    },
+  }));
+
+  return <video ref={videoRef} src="movie.mp4" />;
+});
+
+// Parent usage
+function App() {
+  const playerRef = useRef(null);
+
+  return (
+    <>
+      <VideoPlayer ref={playerRef} />
+      <button onClick={() => playerRef.current.play()}>Play</button>
+    </>
+  );
+}
+```
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-lvstah3a?file=src%2Fcomponents%2FCustomInput.jsx)
+
+#### Use Cases
+
+- Creating reusable components with custom APIs
+- Encapsulating complex DOM interactions
+- Building component libraries
+- Limiting parent access to internal implementation
+
+---
+
+## Effect Hooks
+
+Effect Hooks let a component synchronize with external systems, such as dealing with a network, the browser DOM, or animations.
+
+### useEffect
+
+#### Overview
+
+The `useEffect` hook connects a component to an external system, running side effects after the component has rendered.
+
+#### Core Problem
+
+Components frequently need to perform operations that shouldn't occur during rendering: API calls, timer setup, DOM manipulation, and external subscriptions. These operations require coordination with the component lifecycle.
+
+#### Solution
+
+`useEffect` executes side effects after the render is committed to the screen, provides a cleanup mechanism to prevent memory leaks, and controls execution timing through dependency arrays.
+
+#### Execution Timing
+
+```jsx
+useEffect(() => {
+  // Effect runs after render commits to screen
+
+  return () => {
+    // Cleanup runs before next effect or unmount
+  };
+}, [dependencies]);
+```
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-q1ccdr4d?file=src%2FExample.jsx)
+
+#### Common Patterns
+
+- **Empty dependency array**: Runs once on mount
+- **No dependency array**: Runs after every render
+- **With dependencies**: Runs when dependencies change
+
+---
+
+### useLayoutEffect
+
+#### Overview
+
+The `useLayoutEffect` hook is a variation of `useEffect` that fires synchronously before the browser repaints the screen, useful for measuring layout or manipulating the DOM for visual effects.
+
+#### Core Problem
+
+`useEffect` runs after the browser paints, which can cause visual flickers when manipulating the DOM. Measurements or DOM updates that should be invisible to users need to complete before the paint phase.
+
+#### Solution
+
+`useLayoutEffect` blocks the browser paint until the effect completes, ensuring DOM measurements and mutations are applied before the user sees any visual updates.
+
+#### Execution Order
+
+```
+1. Render Phase (React calculates changes)
+2. Commit Phase (React updates DOM)
+3. useLayoutEffect runs (synchronously, blocks paint)
+4. Browser Paint
+5. useEffect runs (asynchronously)
+```
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-anz6as6s?file=src%2FExample.jsx)
+
+#### Use Cases
+
+- DOM measurements (scroll position, element dimensions)
+- Positioning tooltips or popovers
+- Preventing layout shift animations
+- Scroll position restoration
+
+**Important**: This hook is rarely needed. Modern CSS, browser optimizations, and React's concurrent features handle most scenarios without requiring `useLayoutEffect`.
+And it is very hard to see the difference between useEffect and useLayoutEffect in most cases.
+
+---
+
+### useInsertionEffect
+
+#### Overview
+
+The `useInsertionEffect` hook is a specialized hook for libraries to insert dynamic CSS into the DOM before layout calculation (rarely used in application code).
+
+#### Core Problem
+
+CSS-in-JS libraries need to inject styles into the document before the browser calculates layout. If styles are injected too late, it can cause performance issues or visual inconsistencies.
+
+#### Solution
+
+`useInsertionEffect` fires before all DOM mutations, allowing CSS-in-JS libraries to inject styles at the optimal time without blocking layout or causing re-calculations.
+
+#### Execution Order
+
+```
+1. Render Phase (React calculates changes)
+2. useInsertionEffect runs (inject styles)
+3. Commit Phase (React updates DOM)
+4. useLayoutEffect runs
+5. Browser Paint
+6. useEffect runs
+```
+
+#### Usage Example
+
+```jsx
+function useCSS(rule) {
+  useInsertionEffect(() => {
+    const style = document.createElement("style");
+    style.textContent = rule;
+    document.head.appendChild(style);
+
+    return () => {
+      document.head.removeChild(style);
+    };
+  });
+}
+```
+
+#### Use Cases
+
+- CSS-in-JS library implementation
+- Dynamic style injection before layout
+- Critical styling that must be applied immediately
+
+**Important**: This is a specialized hook intended for library authors. Application developers should almost never need to use it directly.
+
+---
+
+## Performance Hooks
+
+These Hooks help optimize performance by skipping unnecessary work like re-calculations or re-renders.
+
+### useMemo
+
+#### Overview
+
+The `useMemo` hook caches the result of an expensive calculation and only re-computes it when its dependencies change.
+
+#### Core Problem
+
+Expensive calculations run on every render, even when their inputs haven't changed. Additionally, creating new object or array references on each render can trigger unnecessary re-renders in child components that depend on referential equality.
+
+#### Solution
+
+`useMemo` caches the computed result, recalculating only when specified dependencies change. This optimizes both computation time and referential stability.
+
+```jsx
+const expensiveValue = useMemo(() => {
+  return computeExpensiveValue(input);
+}, [input]); // Only recalculates when input changes
+```
+
+#### When to Use
+
+- Computationally expensive operations
+- Maintaining referential equality for objects/arrays passed as props
+- Filtering or transforming large datasets
+- Complex calculations that don't need to run on every render
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-wbg2xxvp?file=src%2FExample.jsx)
+
+---
+
+### useCallback
+
+#### Overview
+
+The `useCallback` hook caches a function definition to prevent unnecessary re-creation of functions on every render, which is particularly useful for passing callbacks to optimized child components.
+
+#### Core Problem
+
+Functions declared in components are recreated on every render. When passed as props to optimized child components (wrapped in `React.memo`), these new function references cause unnecessary re-renders even when the function logic hasn't changed.
+
+#### Solution
+
+`useCallback` caches the function definition, returning the same reference across renders when dependencies remain unchanged.
+
+```jsx
+const handleClick = useCallback(() => {
+  console.log(value);
+}, [value]); // Only recreates when value changes
+```
+
+#### When to Use
+
+- Passing callbacks to `React.memo` optimized components
+- Functions as dependencies in `useEffect`, `useMemo`, or other hooks
+- Performance-critical scenarios with expensive child re-renders
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-wbg2xxvp?file=src%2FExample.jsx)
+
+---
+
+### useTransition
+
+#### Overview
+
+The `useTransition` hook marks a state transition as non-blocking, allowing urgent updates (like typing) to interrupt less critical ones.
+
+#### Core Problem
+
+Some state updates are urgent (user typing in an input) while others are expensive but non-urgent (filtering large lists). Without prioritization, expensive updates can freeze the UI and make the application feel unresponsive.
+
+#### Solution
+
+`useTransition` lets you mark state updates as low-priority transitions. React can interrupt these updates to handle more urgent work, keeping the interface responsive.
+
+```jsx
+const [isPending, startTransition] = useTransition();
+
+const handleChange = (e) => {
+  setInput(e.target.value); // Urgent - updates immediately
+
+  startTransition(() => {
+    // Non-urgent - can be interrupted
+    const filtered = largeList.filter((item) => item.includes(e.target.value));
+    setFilteredList(filtered);
+  });
+};
+```
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-unbkmgja?file=src%2FApp.jsx)
+
+#### Use Cases
+
+- Filtering or searching large datasets
+- Tab switching with heavy content
+- Sorting data tables
+- Any expensive state update that shouldn't block user interactions
+
+---
+
+### useDeferredValue
+
+#### Overview
+
+The `useDeferredValue` hook defers updating a non-critical part of the UI so other parts can update first.
+
+#### Core Problem
+
+When receiving a frequently updating value (like search input) that triggers expensive operations, you need to keep the input responsive while delaying the expensive work.
+
+#### Solution
+
+`useDeferredValue` provides a "lagged" version of the value that updates after more urgent updates complete, allowing you to defer expensive operations without blocking user interactions.
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-rdsgkhfm?file=src%2FApp.jsx)
+
+## Other Hooks
+
+### useDebugValue
+
+#### Overview
+
+The `useDebugValue` hook customizes how a custom Hook's label appears in the React DevTools.
+
+#### Core Problem
+
+When building custom hooks, it can be difficult to debug their internal state in React DevTools. Default labels don't always provide meaningful information about what the hook is doing.
+
+#### Solution
+
+`useDebugValue` allows you to display a custom label or formatted value in React DevTools, making it easier to understand what's happening inside your custom hooks.
+
+```jsx
+function useOnlineStatus() {
+  const [isOnline, setIsOnline] = useState(true);
+
+  useEffect(() => {
+    // ... connection logic
+  }, []);
+
+  // Shows "Online" or "Offline" in DevTools
+  useDebugValue(isOnline ? "Online" : "Offline");
+
+  return isOnline;
+}
+```
+
+#### Advanced Usage
+
+For expensive formatting operations, pass a formatter function as the second argument:
+
+```jsx
+function useDate() {
+  const date = new Date();
+
+  // Formatter only runs when DevTools is open
+  useDebugValue(date, (date) => date.toLocaleString());
+
+  return date;
+}
+```
+
+#### Use Cases
+
+- Debugging custom hooks in development
+- Providing meaningful labels for complex state
+- Avoiding performance overhead in production (has no effect)
+
+**Important**: This hook is only useful for custom hooks and has no effect in production builds.
+
+---
+
+### useId
+
+#### Overview
+
+The `useId` hook generates a unique, stable ID that is consistent across the client and server, primarily for accessibility APIs.
+
+#### Core Problem
+
+Creating unique IDs for accessibility attributes (like connecting labels to inputs) is difficult when components are reused multiple times or rendered on both server and client. Hard-coded IDs cause conflicts, and random IDs cause hydration mismatches.
+
+#### Solution
+
+`useId` generates stable, unique IDs that work consistently across server rendering, client hydration, and multiple component instances.
+
+```jsx
+function FormField() {
+  const id = useId();
+
+  return (
+    <>
+      <label htmlFor={id}>Name:</label>
+      <input id={id} type="text" />
+    </>
+  );
+}
+```
+
+#### Use Cases
+
+- Connecting labels to inputs (`htmlFor` / `id`)
+- ARIA attributes (`aria-labelledby`, `aria-describedby`)
+- Form field accessibility
+- Multiple instances of the same component
+- Server-side rendering scenarios
+
+---
+
+## React 19 Hooks
+
+### useFormStatus
+
+#### Overview
+
+The `useFormStatus` hook provides information about the parent form's submission status, enabling responsive form UI during server actions.
+
+#### Core Problem
+
+During form submissions (especially with Server Actions), you need to show loading states, disable buttons, and provide feedback without manually tracking submission state.
+
+#### Solution
+
+`useFormStatus` exposes the form's current status, including whether it's pending, what data is being submitted, and the submission method.
+
+```jsx
+import { useFormStatus } from "react-dom";
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <button type="submit" disabled={pending}>
+      {pending ? "Saving..." : "Save"}
+    </button>
+  );
+}
+
+function ContactForm() {
+  async function submitForm(formData) {
+    "use server";
+    await saveContact(formData.get("name"), formData.get("email"));
+  }
+
+  return (
+    <form action={submitForm}>
+      <input name="name" required />
+      <input name="email" type="email" required />
+      <SubmitButton />
+    </form>
+  );
+}
+```
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-qkuql1k5?file=src%2FApp.jsx)
+
+#### Important Constraints
+
+- Must be called in a child component of the form, not the form itself
+- Only works with the `action` prop (Server Actions), not `onSubmit`
+- Returns: `{ pending, data, method, action }`
+
+---
+
+### useOptimistic
+
+#### Overview
+
+The `useOptimistic` hook enables optimistic UI updates by managing temporary state that reflects user actions immediately, before server confirmation.
+
+#### Core Problem
+
+Waiting for server responses makes applications feel slow and unresponsive. Users expect immediate feedback when they interact with the interface.
+
+#### Solution
+
+`useOptimistic` allows you to show immediate UI updates while the actual operation completes in the background. If the operation fails, the optimistic update is automatically rolled back.
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-n2487dja?file=src%2FApp.jsx)
+
+#### Use Cases
+
+- Form submissions with immediate feedback
+- Like/favorite buttons
+- Todo list interactions
+- Social features (comments, reactions, follows)
+- Any server action where immediate feedback improves user experience
+
+#### Behavior
+
+1. User submits → optimistic update shows immediately
+2. Server operation runs in background
+3. On success: optimistic state is replaced with real data
+4. On failure: optimistic state is automatically rolled back

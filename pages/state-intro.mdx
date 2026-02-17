@@ -1,0 +1,273 @@
+---
+toc: false
+---
+
+# State intro
+
+In react, directly updating the DOM is discouraged. Instead, React uses a concept called "state" to manage and update the user interface efficiently.
+
+State is a JavaScript object that holds data that may change over time and affects what is rendered on the screen. When the state of a component changes, React re-renders the component to reflect the new state. This allows for a more dynamic and interactive user experience. If we just use a regular variable to hold data, React won't know when that data changes, and the UI won't update accordingly. By using state, we can ensure that our UI stays in sync with the underlying data, making our applications more responsive and user-friendly.
+
+## Hooks
+
+Hooks are special functions in React that allow you to "hook into" React features, such as state and lifecycle methods, from functional components. They were introduced in React 16.8 to enable state management and side effects in functional components. The most commonly used hook for managing state is the `useState` hook.
+
+Here's a simple example of how to use the `useState` hook in a functional component:
+
+```jsx {4}
+import React, { useState } from "react";
+function Counter() {
+  // Declare a state variable named "count" with an initial value of 0
+  const [count, setCount] = useState(0);
+
+  return (
+    <div>
+      <p>You clicked {count} times</p>
+      <button onClick={() => setCount(count + 1)}>Click me</button>
+    </div>
+  );
+}
+```
+
+In this example, we import the `useState` hook from React. We then declare a state variable `count` and a function `setCount` to update it. The initial value of `count` is set to 0. When the button is clicked, the `setCount` function is called to increment the count, which triggers a re-render of the component to display the updated count.
+
+> The key point to remember is that, we see the updated value because the component re-renders when the state changes via the `setCount` function.
+
+In javascript, when a function is invoked, a new execution context is created. When that function invocation is complete, the execution context is destroyed and any local variables within that context are lost. This means that if we declare a variable inside a function, its value will not persist between function calls. With React state, however, the state variables are preserved across re-renders of the component, allowing us to maintain and update values over time.
+
+## Derived state
+
+Derived state refers to values that can be computed or derived from existing state or props in a React component, rather than being stored directly in the component's state. This approach helps to avoid redundancy and keeps the state minimal and focused on the essential data.
+
+Here's an example to illustrate derived state:
+
+```jsx {4}
+import React, { useState } from "react";
+function UserProfile({ firstName, lastName }) {
+  // Derived state: fullName is computed from firstName and lastName props
+  const fullName = `${firstName} ${lastName}`;
+
+  return (
+    <div>
+      <h1>{fullName}</h1>
+    </div>
+  );
+}
+```
+
+In this example, the `fullName` is derived from the `firstName` and `lastName` props. Instead of storing `fullName` in the component's state, we compute it on-the-fly whenever the component renders. This ensures that `fullName` is always up-to-date with the latest values of `firstName` and `lastName`, without the need for additional state management.
+
+## Conditional rendering
+
+Conditional rendering in React allows you to render different components or elements based on certain conditions. This is typically done using JavaScript conditional statements like `if`, `else`, or the ternary operator within the JSX code.
+
+Here's an example of conditional rendering using the ternary operator:
+
+```jsx {5}
+import React, { useState } from "react";
+
+function UserGreeting({ isLoggedIn }) {
+  return (
+    <div>{isLoggedIn ? <h1>Welcome back!</h1> : <h1>Please sign up.</h1>}</div>
+  );
+}
+```
+
+another option is using ternary operator:
+
+```jsx {4}
+import React, { useState } from "react";
+
+function UserGreeting({ isLoggedIn }) {
+  return <div>{isLoggedIn && <h1>Welcome back!</h1>}</div>;
+}
+```
+
+or else, we can use if-else statements outside of JSX:
+
+```jsx {5,7}
+import React, { useState } from "react";
+
+function UserGreeting({ isLoggedIn }) {
+  let message;
+  if (isLoggedIn) {
+    message = <h1>Welcome back!</h1>;
+  } else {
+    message = <h1>Please sign up.</h1>;
+  }
+  return <div>{message}</div>;
+}
+```
+
+## Rendering lists
+
+Rendering lists in React is typically done using the `map()` function to iterate over an array of data and return a list of JSX elements. Each element in the list should have a unique `key` prop to help React identify which items have changed, been added, or removed.
+
+Here's an example of rendering a list of items in React:
+
+```jsx {5}
+import React from "react";
+function ItemList({ items }) {
+  return (
+    <ul>
+      {items.map((item) => (
+        <li key={item.id}>{item.name}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+We can use `index` as key when we don't have unique ids, but it's not recommended as it can lead to performance issues and bugs when the list changes.
+
+Using whatever we have learned till now, rework on the cart example to incorporate state, conditional rendering, and list rendering, props, events etc. Decide at what level each state lies, and where to handle the event handler. Try the prop drilling and state lifting concepts too. See if there is a possibility to have derived values.
+
+> _Prop drilling_: passing data from a parent component to a deeply nested child component through multiple layers of intermediate components.
+
+> _State lifting_: moving state up to the closest common ancestor of components that need to share that state.
+
+Here is an example where we did state, props, event handling, conditional redering, list rendering, styling etc in one example
+
+> [Stackblitz solution](https://stackblitz.com/edit/vitejs-vite-qjprpm7q?file=src%2FApp.jsx)
+
+## Keys and State Management Issues
+
+**Problem 1: Index as Key in Dynamic Lists**
+
+```jsx
+// Bad - using index
+items.map((item, index) => <TodoItem key={index} todo={item} />);
+```
+
+**What goes wrong:**
+
+When list order changes (delete, reorder, filter), React matches components by index position, not identity. State gets attached to the wrong items.
+
+**Example:**
+
+- Item at index 0 has input focused
+- Delete first item
+- Second item moves to index 0
+- React reuses the component at index 0
+- Focus state now attached to wrong item
+
+**Solution:**
+
+```jsx
+// Good - unique stable ID
+items.map((item) => <TodoItem key={item.id} todo={item} />);
+```
+
+**Problem 2: Key Changes and Component Remounting**
+
+**What Happens:**
+
+When a component's `key` prop changes, React treats it as a completely different component. The old one is **unmounted** (destroyed) and a new one is **mounted** (created fresh).
+
+**Unintended Consequences:**
+
+```jsx
+function UserProfile({ user }) {
+  return <ProfileForm key={user.id} data={user} />;
+}
+
+// Inside ProfileForm
+function ProfileForm({ data }) {
+  const [editedName, setEditedName] = useState(data.name);
+  const [unsavedChanges, setUnsavedChanges] = useState(false);
+
+  // User starts editing...
+}
+```
+
+**Scenario:**
+
+1. User opens profile for `userId: 1`, starts typing changes
+2. App updates and `userId` changes to `2`
+3. Key changes from `1` to `2`
+4. React destroys the entire `ProfileForm` component
+5. All local state (`editedName`, `unsavedChanges`) is **lost**
+6. New `ProfileForm` mounts with fresh state
+
+**The Problem:** You might want to update the `data` prop but keep the user's in-progress edits. Changing the key wipes everything.
+
+**When Key Changes Are Intentional (Good):**
+
+```jsx
+// Want to reset form when user switches
+<UserForm key={userId} /> // Fresh form for each user
+
+// Want to clear search when changing tabs
+<SearchBar key={activeTab} /> // New search per tab
+```
+
+**Summary:** Changing keys = full reset. Use it deliberately for resets, not accidentally when you want state to persist.
+
+## State Scheduling and Batching
+
+Batching is an optimization technique used by React to group multiple state updates into a single re-render for better performance. When multiple state updates occur in quick succession, React batches them together and processes them in one go, rather than re-rendering the component after each individual update.
+
+**Batching - Multiple setState Calls:**
+
+React batches multiple state updates into a single re-render for performance.
+
+```jsx {2,3,4}
+function handleClick() {
+  setCount(count + 1);
+  setName("John");
+  setActive(true);
+  // All three updates batched → single re-render
+}
+```
+
+**React 18+ Auto-Batching:**
+
+Batching works everywhere —event handlers, promises, timeouts, native events.
+
+```jsx {3,4, 9, 10}
+// React 17 - separate re-renders
+setTimeout(() => {
+  setCount(count + 1); // Re-render 1
+  setName("John"); // Re-render 2
+}, 1000);
+
+// React 18+ - batched
+setTimeout(() => {
+  setCount(count + 1);
+  setName("John");
+  // Single re-render
+}, 1000);
+```
+
+**State Updates Are Scheduled (Asynchronous):**
+
+setState doesn't update immediately—it schedules an update.
+
+```jsx {5}
+const [count, setCount] = useState(0);
+
+function increment() {
+  setCount(count + 1);
+  console.log(count); // Still 0! Update not applied yet
+}
+```
+
+**Problem with Stale State:**
+
+```jsx
+// Wrong - uses same stale value three times
+setCount(count + 1); // 0 + 1 = 1
+setCount(count + 1); // 0 + 1 = 1
+setCount(count + 1); // 0 + 1 = 1
+// Result: count is 1, not 3
+
+// Correct - functional updates
+setCount((c) => c + 1); // 0 + 1 = 1
+setCount((c) => c + 1); // 1 + 1 = 2
+setCount((c) => c + 1); // 2 + 1 = 3
+// Result: count is 3
+```
+
+**Key Takeaway:** Updates are queued and batched. Use functional updates when new state depends on previous state.
+
+By this point, you should have a good understanding of how state works in React, including how to manage it effectively using hooks, how to derive state from props, and how to render components conditionally and as lists. These concepts are fundamental to building dynamic and interactive applications with React. We have already done a few hands on too, so try building something on top of that or something new to solidify the concepts!

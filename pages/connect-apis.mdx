@@ -1,0 +1,273 @@
+---
+toc: false
+---
+
+# Connecting with APIs in React
+
+In React, connecting with APIs is typically done using the `fetch` API or libraries like Axios to make HTTP requests. You can perform these requests in lifecycle methods (for class components) or using the `useEffect` hook (for functional components) to fetch data when the component mounts or when certain dependencies change.
+
+We could bring in whatever we have learned till now, that is custom hooks, useReducer etc to make our API connections more robust and components cleaner.
+
+In the below example we go the traditional way of fetching data using `fetch` inside `useEffect` hook.
+
+```jsx
+useEffect(() => {
+  fetch("http://localhost:3001/books")
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Failed to fetch books");
+      }
+      return response.json();
+    })
+    .then((data) => {
+      setBooks(data);
+      setLoading(false);
+    })
+    .catch((error) => {
+      setError(error.message);
+      setLoading(false);
+    });
+}, []);
+```
+
+Does it work? Yes. Is it clean? Not really. Can we do better? Yes we can.
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-xypbubrh?file=src%2Fcomponents%2FBookList.jsx)
+
+## Async / Await Syntax
+
+You can also use `async/await` syntax within the `useEffect` hook for cleaner and more readable asynchronous code. But this is just a syntax change, rather a sugar coated syntax for people who doesn't like the traditional `.then()` chaining. Here's how you can do that:
+
+```jsx
+useEffect(() => {
+  async function fetchBooks() {
+    try {
+      const response = await fetch("http://localhost:3001/books");
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch books");
+      }
+
+      const data = await response.json();
+      setBooks(data);
+      setLoading(false);
+    } catch (error) {
+      setError(error.message);
+      setLoading(false);
+    }
+  }
+
+  fetchBooks();
+}, []);
+```
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-z3lay68j?file=src%2Fcomponents%2FBookList.jsx)
+
+We may also need to transform the data before using it in our components. This can be done within the `then` block or after fetching the data using `async/await`. But at this point, the component is getting bloated. Ideally, the component should focus on rendering the UI, and the data fetching logic should be abstracted away.
+
+To keep things clean, we can abstract the data fetching logic into a custom hook.
+
+Here's an example of a custom hook for data fetching:
+
+```jsx
+import { useState, useEffect } from 'react';
+
+function useBooks(url = 'http://localhost:3001/books') {
+  const [books, setBooks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    async function fetchBooks() {
+      ...
+    }
+
+    fetchBooks();
+  }, [url]);
+
+  return { books, loading, error };
+}
+
+export default useBooks;
+
+```
+
+Now, we have the logic encapsulated in a reusable hook. We can use this hook in our component like this:
+
+```jsx
+
+import useBooks from '../hooks/useBooks';
+
+const BookList = () => {
+  const { books, loading, error } = useBooks();
+  ...
+};
+
+export default BookList;
+```
+
+Is this better? Yes, definitely. The component is now cleaner and focuses solely on rendering the UI, while the data fetching logic is encapsulated in a reusable hook. If we make the API URL configurable, we can reuse this hook across different components that need to fetch books from different endpoints.
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-t3gxwfhj?file=src%2Fcomponents%2FBookList.jsx)
+
+## Optimistic UI Updates
+
+When dealing with APIs, especially in scenarios involving data mutations (like POST, PUT, DELETE requests), you might want to implement optimistic UI updates. This means updating the UI immediately as if the operation succeeded, and then rolling back if the API call fails. This can enhance user experience by making the application feel more responsive.
+
+We could add methods that expose the functionality in an optimistic way. First we optimistically add a book to the list, and then make the API call. If the call fails, we revert the change. Similarly, for deletion, we remove the book from the list optimistically and revert if the API call fails.
+
+```jsx
+const addBook = async (newBook) => {
+  const optimisticBook = { ...newBook, id: Date.now(), pending: true };
+
+  // Optimistic update
+  setBooks((prev) => [...prev, optimisticBook]);
+
+  try {
+    const response = await fetch("http://localhost:3001/books", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newBook),
+    });
+
+    if (!response.ok) throw new Error("Failed to add book");
+
+    const savedBook = await response.json();
+
+    // Replace optimistic with real data
+    setBooks((prev) =>
+      prev.map((book) => (book.id === optimisticBook.id ? savedBook : book)),
+    );
+  } catch (error) {
+    // Revert on error
+    setBooks((prev) => prev.filter((book) => book.id !== optimisticBook.id));
+    alert("Failed to add book!");
+  }
+};
+
+const deleteBook = async (id) => {
+  const originalBooks = books;
+
+  // Optimistic delete
+  setBooks((prev) => prev.filter((book) => book.id !== id));
+
+  try {
+    const response = await fetch(`http://localhost:3001/books/${id}`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) throw new Error("Failed to delete book");
+  } catch (error) {
+    // Revert on error
+    setBooks(originalBooks);
+    alert("Failed to delete book!");
+  }
+};
+```
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-jgqjhjhf?file=src%2Fhooks%2FuseBooks.js)
+
+This approach keeps your component logic separated from the API handling, making the code more maintainable and reusable across different components.
+
+Can we go further? Yes, we can use `useReducer` for more complex state management within our custom hooks. But at this point, the indirection is getting deep. Someone who is new to the codebase might find it hard to trace through the layers of abstraction. So, it's essential to strike a balance between abstraction and readability.
+
+## Custom hooks with useReducer
+
+For more complex state management scenarios, especially when dealing with multiple related state variables or complex state transitions, you might consider using the `useReducer` hook within your custom hooks. This can help manage state in a more predictable way. If we are comfortable with this pattern, then shifting to Redux or other state management libraries would be easier in the future.
+
+```jsx
+import { useReducer, useEffect } from "react";
+
+const initialState = {
+  books: [],
+  loading: true,
+  error: null,
+};
+
+function booksReducer(state, action) {
+  switch (action.type) {
+    case "FETCH_SUCCESS":
+      return { ...state, books: action.payload, loading: false, error: null };
+
+    case "FETCH_ERROR":
+      return { ...state, error: action.payload, loading: false };
+
+    case "ADD_OPTIMISTIC":
+      return { ...state, books: [...state.books, action.payload] };
+
+    case "ADD_SUCCESS":
+      return {
+        ...state,
+        books: state.books.map((book) =>
+          book.id === action.payload.tempId ? action.payload.book : book,
+        ),
+      };
+
+    case "ADD_ERROR":
+      return {
+        ...state,
+        books: state.books.filter((book) => book.id !== action.payload),
+      };
+
+    case "DELETE_OPTIMISTIC":
+      return {
+        ...state,
+        books: state.books.filter((book) => book.id !== action.payload),
+      };
+
+    case "DELETE_ERROR":
+      return { ...state, books: action.payload };
+
+    default:
+      return state;
+  }
+}
+
+function useBooks() {
+  const [state, dispatch] = useReducer(booksReducer, initialState);
+
+  useEffect(() => {
+    async function fetchBooks() {
+      ...
+    }
+    fetchBooks();
+  }, []);
+
+  const addBook = async (newBook) => {
+    ...
+  };
+
+  const deleteBook = async (id) => {
+    ...
+  };
+
+  return {
+    books: state.books,
+    loading: state.loading,
+    error: state.error,
+    addBook,
+    deleteBook,
+  };
+}
+
+export default useBooks;
+```
+
+and in the component
+
+```jsx
+import useBooks from "../hooks/useBooks";
+
+// inside the component
+const { books, loading, error, addBook, deleteBook } = useBooks();
+```
+
+> [Stackblitz example](https://stackblitz.com/edit/vitejs-vite-83gfece2?file=src%2Fhooks%2FuseBooks.js)
+
+## 3rd party hooks
+
+If we need to explore more custom hooks checkout [useHooks library](https://usehooks.com/) who provides a ton of pre made hooks for various use-cases.
+
+Now, we have introduced enough complexities and pushed the limits of custom hooks. If we start adding more features like pagination, caching, background updates, retries etc, the custom hook will become too complex and hard to maintain.
+
+In real world applications, we might want to use libraries like React Query, SWR, or Apollo Client (for GraphQL) that provide robust solutions for data fetching, caching, synchronization, and state management out of the box. These libraries handle many of the complexities associated with API interactions, such as caching, background updates, and error handling, allowing developers to focus more on building features rather than managing data fetching logic.

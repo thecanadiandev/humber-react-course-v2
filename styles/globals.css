@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&family=Quicksand:wght@300..700&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
+
 :root {
   --react-blue: #61dafb;
   --dark-bg: #20232a;
@@ -10,6 +12,7 @@
 body {
   background-color: var(--dark-bg) !important;
   color: var(--gray-text) !important;
+  font-family: 'Roboto', 'Quicksand', sans-serif !important;
 }
 
 /* Main content area */
@@ -21,6 +24,7 @@ body {
 h1, h2, h3, h4, h5, h6 {
   color: var(--light-text) !important;
   font-weight: 600 !important;
+  font-family: 'Quicksand', 'Roboto', sans-serif !important;
 }
 
 h1 {
@@ -97,6 +101,12 @@ nav.nextra-nav-container {
   background-color: rgba(255, 255, 255, 0.05) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   color: var(--light-text) !important;
+  font-family: 'Roboto', sans-serif !important;
+}
+
+/* Code blocks */
+code, pre {
+  font-family: 'Fira Code', monospace !important;
 }
 
 .nextra-search input::placeholder {
@@ -195,4 +205,26 @@ blockquote {
 ::selection {
   background-color: rgba(97, 218, 251, 0.3) !important;
   color: var(--light-text) !important;
+}
+
+/* Bullet points with square style */
+ul {
+  list-style-type: square !important;
+  margin: 1rem 0 !important;
+  padding-left: 2rem !important;
+}
+
+ul li {
+  color: var(--gray-text) !important;
+  margin-bottom: 0.5rem !important;
+  line-height: 1.6 !important;
+}
+
+ul li::marker {
+  color: var(--react-blue) !important;
+}
+
+ul ul {
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
 }

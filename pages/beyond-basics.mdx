@@ -1,0 +1,199 @@
+---
+toc: false
+---
+
+# Beyond Basic State Management
+
+You now understand `useState`, `useEffect`, custom hooks, Context API, prop drilling, and state lifting—solid foundations for managing React state.
+
+But real-world applications often demand more.
+
+**When to Consider Specialized Libraries:**
+
+Libraries like **React Query**, **SWR**, or **Redux Toolkit** solve specific problems that become painful at scale. Don't reach for them immediately—evaluate your actual needs first.
+
+**Ask Yourself:**
+
+- **Caching complexity** - Do you need automatic cache invalidation, background refetching, or stale-while-revalidate patterns?
+
+- **Server state vs client state** - Is most of your state coming from APIs? Server state (remote data) has different needs than client state (UI toggles, forms).
+
+- **Performance bottlenecks** - Are you experiencing slow renders, excessive API calls, or prop drilling hell?
+
+- **Advanced data fetching** - Do you need retry logic, optimistic updates, pagination, infinite scroll, or request deduplication?
+
+- **Team scalability** - Is your codebase growing with multiple teams? Do you need enforced patterns and consistency?
+
+- **Refactoring friction** - Is tight coupling between components making changes risky and time-consuming?
+
+**The Reality:**
+
+Basic hooks and Context work well for small-to-medium apps. As complexity grows, specialized tools provide battle-tested solutions so you don't rebuild the same patterns manually.
+
+Evaluate based on pain points, not trends.
+
+## State Management Libraries - Server vs Client State
+
+**Server State Libraries (API Data):**
+
+**React Query / TanStack Query**
+
+- Manages server data: fetching, caching, synchronization
+- Automatic background refetching and cache invalidation
+- Built-in loading/error states, retries, pagination, infinite scroll
+- Optimistic updates for better UX
+- **Use for:** Apps heavily dependent on API data, real-time sync needs
+
+**SWR (Stale-While-Revalidate)**
+
+- Similar to React Query but lighter weight
+- Focus on cache-first strategy with background updates
+- Great for read-heavy applications
+- **Use for:** Simpler data fetching needs, public-facing apps with frequent updates
+
+**Client State Libraries (UI State):**
+
+**Redux Toolkit**
+
+- Global client state management (UI toggles, forms, user preferences)
+- Predictable state updates with actions and reducers
+- Excellent DevTools for debugging
+- Middleware support for side effects
+- **Use for:** Complex client state logic, need for centralized state, large teams requiring consistency
+
+**Zustand**
+
+- Lightweight alternative to Redux
+- Simpler API, less boilerplate
+- Good for medium-sized apps
+- **Use for:** When Redux feels heavy but Context isn't enough
+
+**Jotai / Recoil**
+
+- Atomic state management
+- Fine-grained reactivity, better performance
+- **Use for:** Apps with many independent state pieces, avoiding unnecessary re-renders
+
+**Hybrid Approach (Common Pattern):**
+
+```
+React Query/SWR → Server state (API data, caching)
++
+Redux Toolkit/Zustand → Client state (UI, forms, auth)
+```
+
+**Key Principle:** Don't use Redux/Zustand for API data—that's server state. Don't use React Query for UI toggles—that's client state. Pick the right tool for each concern.
+
+## Framworks
+
+Sometimes you need more than just state management. You need a full framework to handle routing, server-side rendering, static site generation, and more. Rather than building all this from scratch with plain React, consider using a framework like **Next.js**.
+Its an opinionated way to build React apps with batteries included.
+
+**What Next.js Provides:**
+
+Next.js is a React **framework** (React is a library). It adds structure, tooling, and features on top of React.
+
+**Key Features:**
+
+- **Server-Side Rendering (SSR)** - Pages render on server, sent as HTML to browser
+- **Static Site Generation (SSG)** - Pre-render pages at build time
+- **File-based Routing** - No react-router, folders = routes automatically
+- **API Routes** - Build backend endpoints in the same codebase
+- **Image Optimization** - Automatic image compression and lazy loading
+- **Built-in Performance** - Code splitting, prefetching, edge caching
+
+**When to Use Next.js Over Plain React:**
+
+**Choose Next.js if:**
+
+- **SEO matters** - E-commerce, blogs, marketing sites need search engine visibility. SSR/SSG gives crawlable HTML.
+- **Performance critical** - Fast initial page load required (SSR delivers content immediately)
+- **Content-heavy** - Blogs, documentation, news sites benefit from static generation
+- **Full-stack needs** - Want API routes without separate backend
+- **Production readiness** - Need routing, optimization, deployment out-of-the-box
+
+**Stick with Create React App / Vite if:**
+
+- **Internal dashboards** - SEO irrelevant, authenticated users only
+- **Single Page Apps (SPAs)** - Heavy client-side interaction, no SEO needs
+- **Learning React** - Simpler mental model without server concepts
+- **Fully client-side** - Consuming external APIs only, no backend logic needed
+
+**Other React Frameworks:**
+
+- **Remix** - Similar to Next.js, focuses on web fundamentals and nested routing
+- **Gatsby** - SSG-focused, great for blogs and documentation
+- **Astro** - Ship less JavaScript, perfect for content sites
+
+**The Shift:** React ecosystem is moving toward frameworks. React team now recommends starting with a framework (Next.js, Remix) rather than plain React for production apps.
+
+**Bottom Line:** Next.js adds complexity but solves real problems—SEO, performance, routing, deployment. Use it when those problems exist, not just because it's popular.
+
+## Use case discussion
+
+Let's analyze a common real-world scenario: building a telecom website with both marketing pages and a customer portal.
+
+**Site Type Analysis:**
+
+Telecom sites typically have:
+
+- Marketing pages (plans, services, coverage)
+- Customer portal (account, billing, usage)
+- Support/documentation
+- Plan comparison and signup flows
+
+**Recommended Approach: Next.js (Hybrid)**
+
+**Why Next.js:**
+
+**1. Marketing Pages Need SEO**
+
+- Plan listings, coverage maps, service pages must rank in search
+- Use **SSG (Static Site Generation)** for these pages
+- Pre-render at build time, blazing fast load
+
+**2. Customer Portal is Dynamic**
+
+- Account dashboard, billing, usage stats
+- Use **SSR or Client-Side** rendering
+- Data is user-specific, can't be pre-rendered
+- Authenticated routes don't need SEO
+
+**3. Performance Matters**
+
+- Users comparing plans need fast experience
+- Next.js automatic code splitting and image optimization
+- Edge caching for static content
+
+**Architecture Breakdown:**
+
+```
+├── Marketing (SSG)
+│   ├── /plans - Static, SEO optimized
+│   ├── /coverage - Static maps
+│   └── /about - Static content
+│
+├── Customer Portal (SSR/Client)
+│   ├── /dashboard - Server-rendered with user data
+│   ├── /billing - Client-side with React Query
+│   └── /usage - Real-time data fetching
+│
+└── API Routes
+    ├── /api/plans - Fetch plan data
+    └── /api/user/* - User-specific endpoints
+```
+
+**State Management:**
+
+- **React Query** - API data (plans, user info, billing)
+- **Zustand/Context** - UI state (selected plan, form state)
+
+**Alternative (Not Recommended):**
+
+Plain React SPA would work but:
+
+- Marketing pages invisible to search engines
+- Slower initial load (JavaScript must load first)
+- Need separate backend for API
+
+**Verdict:** Next.js hybrid approach gives best of both—fast, SEO-friendly marketing + dynamic authenticated portal.
